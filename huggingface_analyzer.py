@@ -1,0 +1,131 @@
+# huggingface_analyzer.py - Hugging Face AI integration for email analysis
+
+import requests
+import json
+import re
+from typing import Dict
+import time
+
+class HuggingFaceAnalyzer:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://api-inference.huggingface.co/models/"
+        
+        # Using reliable sentiment analysis model (always available)
+        self.sentiment_model = "distilbert-base-uncased-finetuned-sst-2-english"
+        # This is a very reliable model that's always available
+        
+    def analyze_email_with_ai(self, subject: str, body: str) -> Dict:
+        """Use Hugging Face for sentiment analysis + local rules for structure"""
+        
+        # Get sentiment analysis from Hugging Face
+        sentiment_data = self._get_sentiment_analysis(subject + " " + body)
+        
+        # Use our local analyzer for the structured analysis
+        from local_analyzer import LocalEmailAnalyzer
+        local_analyzer = LocalEmailAnalyzer()
+        base_result = local_analyzer.analyze_email(subject, body)
+        
+        # Enhance with AI sentiment insights
+        if sentiment_data:
+            # Adjust scores based on sentiment
+            sentiment_score = sentiment_data.get('sentiment_score', 0)
+            
+            # Enhance professionalism score based on sentiment
+            for category in base_result["breakdown"]:
+                if category["name"] == "Professionalism":
+                    if sentiment_score > 0.5:  # Positive sentiment
+                        category["score"] = min(10, category["score"] + 2)
+                        category["feedback"] += f" AI detected positive tone (confidence: {sentiment_score:.2f})."
+                    elif sentiment_score < -0.3:  # Negative sentiment
+                        category["score"] = max(0, category["score"] - 3)
+                        category["feedback"] += f" AI detected negative tone (confidence: {abs(sentiment_score):.2f})."
+                    else:
+                        category["feedback"] += " AI detected neutral tone."
+        
+        # Recalculate overall score
+        base_result["overallScore"] = sum(cat["score"] for cat in base_result["breakdown"])
+        base_result["verdict"] = self._get_verdict(base_result["overallScore"]) + " (AI Enhanced)"
+        
+        return base_result
+    
+    def _get_sentiment_analysis(self, text: str) -> Dict:
+        """Get sentiment analysis from Hugging Face"""
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {"inputs": text}
+        
+        try:
+            response = requests.post(
+                f"{self.base_url}{self.sentiment_model}",
+                headers=headers,
+                json=payload,
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return self._process_sentiment_response(result)
+            elif response.status_code == 503:
+                print("Sentiment model loading, skipping AI enhancement...")
+                return None
+            else:
+                print(f"Sentiment API error: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            print(f"Sentiment analysis failed: {e}")
+            return None
+    
+    def _process_sentiment_response(self, response) -> Dict:
+        """Process sentiment response from Hugging Face"""
+        try:
+            if isinstance(response, list) and len(response) > 0:
+                sentiments = response[0]
+                
+                # Find the dominant sentiment
+                positive_score = 0
+                negative_score = 0
+                
+                for sentiment in sentiments:
+                    label = sentiment.get('label', '').upper()
+                    score = sentiment.get('score', 0)
+                    
+                    if 'POSITIVE' in label:
+                        positive_score = score
+                    elif 'NEGATIVE' in label:
+                        negative_score = score
+                
+                # Calculate overall sentiment score (-1 to 1)
+                sentiment_score = positive_score - negative_score
+                
+                return {
+                    'sentiment_score': sentiment_score,
+                    'positive_confidence': positive_score,
+                    'negative_confidence': negative_score
+                }
+            
+        except Exception as e:
+            print(f"Error processing sentiment: {e}")
+            
+        return None
+    
+    def _get_verdict(self, overall_score: int) -> str:
+        """Generate verdict based on overall score"""
+        if overall_score >= 80:
+            return "Excellent - This email is likely to get responses"
+        elif overall_score >= 65:
+            return "Good - Strong email with minor improvements needed"
+        elif overall_score >= 45:
+            return "Fair - Decent foundation but needs significant improvements"
+        elif overall_score >= 25:
+            return "Poor - Major issues that will hurt response rates"
+        else:
+            return "Very Poor - This email needs a complete rewrite"
+
+# Usage example:
+# hf_analyzer = HuggingFaceAnalyzer("your_hf_api_key")
+# result = hf_analyzer.analyze_email_with_ai(subject, body)
