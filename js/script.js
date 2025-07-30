@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const emailForm = document.getElementById('email-form');
     const resultsContainer = document.getElementById('results-container');
-    const apiEndpoint = 'https://inboxqualify-api.onrender.com/'; // Our local backend server
+    const apiEndpoint = 'https://inboxqualify-api.onrender.com/qualify'; // Our local backend server
 
     emailForm.addEventListener('submit', async function(event) {
         event.preventDefault();
