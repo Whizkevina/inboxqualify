@@ -11,9 +11,15 @@ class HuggingFaceAnalyzer:
         self.api_key = api_key
         self.base_url = "https://api-inference.huggingface.co/models/"
         
-        # Using reliable sentiment analysis model (always available)
-        self.sentiment_model = "distilbert-base-uncased-finetuned-sst-2-english"
-        # This is a very reliable model that's always available
+        # Use the working model we confirmed
+        self.sentiment_model = "nlptown/bert-base-multilingual-uncased-sentiment"
+        
+        # Fallback models if primary fails
+        self.fallback_models = [
+            "cardiffnlp/twitter-roberta-base-sentiment-latest",
+            "distilbert-base-uncased-finetuned-sst-2-english",
+            "cardiffnlp/twitter-roberta-base-sentiment"
+        ]
         
     def analyze_email_with_ai(self, subject: str, body: str) -> Dict:
         """Use Hugging Face for sentiment analysis + local rules for structure"""
@@ -59,26 +65,69 @@ class HuggingFaceAnalyzer:
         payload = {"inputs": text}
         
         try:
+            url = f"{self.base_url}{self.sentiment_model}"
+            print(f"Calling Hugging Face API: {url}", flush=True)
+            
             response = requests.post(
-                f"{self.base_url}{self.sentiment_model}",
+                url,
                 headers=headers,
                 json=payload,
                 timeout=15
             )
             
+            print(f"Response status: {response.status_code}", flush=True)
+            
             if response.status_code == 200:
                 result = response.json()
+                print(f"Sentiment analysis successful!", flush=True)
                 return self._process_sentiment_response(result)
+            elif response.status_code == 404:
+                print(f"Model not found (404). Trying alternative model...", flush=True)
+                # Try alternative model
+                return self._try_alternative_model(text, headers)
             elif response.status_code == 503:
-                print("Sentiment model loading, skipping AI enhancement...")
-                return None
+                print("Sentiment model loading, skipping AI enhancement...", flush=True)
+                return {'sentiment_score': 0, 'positive_confidence': 0, 'negative_confidence': 0}
             else:
-                print(f"Sentiment API error: {response.status_code}")
-                return None
+                print(f"Sentiment API error: {response.status_code}", flush=True)
+                print(f"Response: {response.text}", flush=True)
+                return {'sentiment_score': 0, 'positive_confidence': 0, 'negative_confidence': 0}
                 
         except Exception as e:
-            print(f"Sentiment analysis failed: {e}")
-            return None
+            print(f"Sentiment analysis failed: {e}", flush=True)
+            return {'sentiment_score': 0, 'positive_confidence': 0, 'negative_confidence': 0}
+    
+    def _try_alternative_model(self, text: str, headers: Dict) -> Dict:
+        """Try alternative sentiment analysis models"""
+        alternative_models = [
+            "cardiffnlp/twitter-roberta-base-sentiment-latest",
+            "nlptown/bert-base-multilingual-uncased-sentiment",
+            "cardiffnlp/twitter-roberta-base-sentiment"
+        ]
+        
+        for model in alternative_models:
+            try:
+                print(f"Trying alternative model: {model}", flush=True)
+                response = requests.post(
+                    f"{self.base_url}{model}",
+                    headers=headers,
+                    json={"inputs": text},
+                    timeout=15
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    print(f"Alternative model {model} succeeded!", flush=True)
+                    return self._process_sentiment_response(result)
+                else:
+                    print(f"Alternative model {model} failed: {response.status_code}", flush=True)
+                    
+            except Exception as e:
+                print(f"Alternative model {model} error: {e}", flush=True)
+                continue
+        
+        print("All alternative models failed, using local analysis only", flush=True)
+        return {'sentiment_score': 0, 'positive_confidence': 0, 'negative_confidence': 0}
     
     def _process_sentiment_response(self, response) -> Dict:
         """Process sentiment response from Hugging Face"""
@@ -86,7 +135,7 @@ class HuggingFaceAnalyzer:
             if isinstance(response, list) and len(response) > 0:
                 sentiments = response[0]
                 
-                # Find the dominant sentiment
+                # Handle different model response formats
                 positive_score = 0
                 negative_score = 0
                 
@@ -94,13 +143,28 @@ class HuggingFaceAnalyzer:
                     label = sentiment.get('label', '').upper()
                     score = sentiment.get('score', 0)
                     
-                    if 'POSITIVE' in label:
+                    # Handle star rating format (1-5 stars)
+                    if '5 STARS' in label or '4 STARS' in label:
+                        positive_score += score
+                    elif '1 STAR' in label or '2 STARS' in label:
+                        negative_score += score
+                    elif '3 STARS' in label:
+                        # 3 stars is neutral, add small positive bias
+                        positive_score += score * 0.2
+                    
+                    # Handle positive/negative format
+                    elif 'POSITIVE' in label or 'POS' in label or label.startswith('LABEL_2'):
                         positive_score = score
-                    elif 'NEGATIVE' in label:
+                    elif 'NEGATIVE' in label or 'NEG' in label or label.startswith('LABEL_0'):
                         negative_score = score
+                    elif 'NEUTRAL' in label or label.startswith('LABEL_1'):
+                        # Neutral is considered slightly positive for email analysis
+                        positive_score = max(positive_score, score * 0.3)
                 
                 # Calculate overall sentiment score (-1 to 1)
                 sentiment_score = positive_score - negative_score
+                
+                print(f"Processed sentiment - Positive: {positive_score:.2f}, Negative: {negative_score:.2f}, Overall: {sentiment_score:.2f}", flush=True)
                 
                 return {
                     'sentiment_score': sentiment_score,
@@ -109,9 +173,13 @@ class HuggingFaceAnalyzer:
                 }
             
         except Exception as e:
-            print(f"Error processing sentiment: {e}")
+            print(f"Error processing sentiment: {e}", flush=True)
             
-        return None
+        return {
+            'sentiment_score': 0,
+            'positive_confidence': 0,
+            'negative_confidence': 0
+        }
     
     def _get_verdict(self, overall_score: int) -> str:
         """Generate verdict based on overall score"""

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InboxQualify Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+            text-decoration: none;
+            color: white;
+        }
+
+        .dashboard {
+            padding: 2rem 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-card.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .stat-card.success {
+            border-left-color: #10b981;
+        }
+
+        .stat-card.danger {
+            border-left-color: #ef4444;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-change {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        .stat-change.positive {
+            color: #10b981;
+        }
+
+        .stat-change.negative {
+            color: #ef4444;
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1a202c;
+        }
+
+        .api-usage {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .progress-fill.danger {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+
+        .error-list {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .error-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .error-item:last-child {
+            border-bottom: none;
+        }
+
+        .error-message {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #dc2626;
+        }
+
+        .error-count {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #5a67d8;
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .auto-refresh input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+
+        .export-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .export-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .export-btn.secondary {
+            background: #6b7280;
+        }
+
+        .export-btn.secondary:hover {
+            background: #4b5563;
+        }
+
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .export-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">📊 InboxQualify Admin</div>
+                <div class="admin-info">
+                    <span>Welcome, {{ admin_user }}</span>
+                    <a href="#" class="logout-btn" onclick="logout()">🚪 Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <div class="container">
+            <div class="auto-refresh">
+                <input type="checkbox" id="autoRefresh" checked>
+                <label for="autoRefresh">Auto-refresh every 30 seconds</label>
+                <button class="refresh-btn" onclick="refreshDashboard()">🔄 Refresh Now</button>
+            </div>
+
+            <!-- Export & Actions -->
+            <div class="export-section">
+                <h3 style="margin-bottom: 1rem; color: #374151;">📊 Export & Analytics</h3>
+                <div class="export-buttons">
+                    <button class="export-btn" onclick="exportData('csv')">
+                        📋 Export to CSV
+                    </button>
+                    <button class="export-btn" onclick="exportData('json')">
+                        📄 Export to JSON
+                    </button>
+                    <button class="export-btn secondary" onclick="clearOldData()">
+                        🗑️ Clear Old Data (30+ days)
+                    </button>
+                    <button class="export-btn secondary" onclick="downloadReport()">
+                        📈 Generate Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{{ dashboard_data.overall_stats.total_requests }}</div>
+                    <div class="stat-label">Total Requests (30 days)</div>
+                </div>
+                
+                <div class="stat-card success">
+                    <div class="stat-number">{{ dashboard_data.overall_stats.success_rate }}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-number">{{ dashboard_data.overall_stats.unique_users }}</div>
+                    <div class="stat-label">Unique Users</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-number">{{ dashboard_data.overall_stats.avg_score }}</div>
+                    <div class="stat-label">Average Email Score</div>
+                </div>
+                
+                <div class="stat-card success">
+                    <div class="stat-number">{{ dashboard_data.overall_stats.ai_enhanced_requests }}</div>
+                    <div class="stat-label">AI Enhanced Requests</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-number">{{ dashboard_data.overall_stats.avg_processing_time }}ms</div>
+                    <div class="stat-label">Avg Processing Time</div>
+                </div>
+            </div>
+
+            <!-- API Usage -->
+            <div class="api-usage">
+                <h2 class="chart-title">🤖 Hugging Face API Usage</h2>
+                {% if api_usage.error %}
+                    <div style="color: #dc2626; padding: 1rem; background: #fee2e2; border-radius: 8px;">
+                        ⚠️ {{ api_usage.error }}
+                    </div>
+                {% else %}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <strong>Requests (30 days):</strong> {{ api_usage.requests_last_30_days }}
+                        </div>
+                        <div>
+                            <strong>Est. Tokens Used:</strong> {{ api_usage.estimated_tokens_used }}
+                        </div>
+                        <div>
+                            <strong>Monthly Limit:</strong> {{ api_usage.monthly_limit }}
+                        </div>
+                        <div>
+                            <strong>Est. Remaining:</strong> {{ api_usage.estimated_remaining }}
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill {% if api_usage.usage_percentage > 80 %}danger{% elif api_usage.usage_percentage > 60 %}warning{% endif %}" 
+                             style="width: {{ api_usage.usage_percentage }}%"></div>
+                    </div>
+                    <div style="text-align: center; margin-top: 0.5rem; font-weight: 600;">
+                        {{ api_usage.usage_percentage }}% of monthly limit used
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="charts-section">
+                <!-- Daily Usage Chart -->
+                <div class="chart-card">
+                    <h3 class="chart-title">📈 Daily Usage (Last 7 Days)</h3>
+                    <canvas id="dailyChart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Hourly Usage -->
+                <div class="chart-card">
+                    <h3 class="chart-title">🕐 Today's Hourly Usage</h3>
+                    <div id="hourlyUsage">
+                        {% for hour_data in dashboard_data.hourly_usage %}
+                        <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
+                            <span>{{ hour_data.hour }}</span>
+                            <span>{{ hour_data.requests }} requests</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Tracking -->
+            {% if dashboard_data.top_errors %}
+            <div class="error-list">
+                <h3 class="chart-title">🚨 Top Errors (Last 30 Days)</h3>
+                {% for error in dashboard_data.top_errors %}
+                <div class="error-item">
+                    <div class="error-message">{{ error.error }}</div>
+                    <div class="error-count">{{ error.count }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Daily usage chart
+        const dailyData = {{ dashboard_data.daily_stats | tojson | safe }};
+        const ctx = document.getElementById('dailyChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dailyData.map(d => d.date),
+                datasets: [{
+                    label: 'Total Requests',
+                    data: dailyData.map(d => d.total_requests),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'AI Enhanced',
+                    data: dailyData.map(d => d.ai_enhanced_requests),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Auto-refresh functionality
+        let autoRefreshInterval;
+        
+        function refreshDashboard() {
+            window.location.reload();
+        }
+        
+        function toggleAutoRefresh() {
+            const checkbox = document.getElementById('autoRefresh');
+            if (checkbox.checked) {
+                autoRefreshInterval = setInterval(refreshDashboard, 30000);
+            } else {
+                clearInterval(autoRefreshInterval);
+            }
+        }
+
+        // Logout functionality
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Clear basic auth by making a request with invalid credentials
+                fetch('/admin', {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa('invalid:invalid')
+                    }
+                }).then(() => {
+                    window.location.href = '/';
+                }).catch(() => {
+                    window.location.href = '/';
+                });
+            }
+        }
+
+        // Export data functionality
+        async function exportData(format) {
+            try {
+                const response = await fetch(`/admin/export?format=${format}`, {
+                    headers: {
+                        'Authorization': window.btoa(document.querySelector('.admin-info span').textContent.split(', ')[1] + ':password')
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `inboxqualify_data_${new Date().toISOString().split('T')[0]}.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Export failed. Please try again.');
+                }
+            } catch (error) {
+                alert('Export failed: ' + error.message);
+            }
+        }
+
+        // Clear old data
+        async function clearOldData() {
+            if (confirm('This will permanently delete data older than 30 days. Are you sure?')) {
+                try {
+                    const response = await fetch('/admin/cleanup', {
+                        method: 'POST'
+                    });
+                    if (response.ok) {
+                        alert('Old data cleared successfully!');
+                        refreshDashboard();
+                    } else {
+                        alert('Failed to clear old data.');
+                    }
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            }
+        }
+
+        // Generate and download report
+        async function downloadReport() {
+            try {
+                const response = await fetch('/admin/report');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `inboxqualify_report_${new Date().toISOString().split('T')[0]}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Report generation failed.');
+                }
+            } catch (error) {
+                alert('Error generating report: ' + error.message);
+            }
+        }
+        
+        document.getElementById('autoRefresh').addEventListener('change', toggleAutoRefresh);
+        
+        // Start auto-refresh by default
+        toggleAutoRefresh();
+    </script>
+</body>
+</html>

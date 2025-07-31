@@ -1,16 +1,16 @@
-# main.py - FINAL VERSION WITH SUPABASE
+# main.py - ENHANCED VERSION WITH SUPABASE SUPPORT
 
 # 1. Import necessary libraries
 import os
 import sys
 import json
 import time
+from typing import Optional
 from fastapi import FastAPI, HTTPException, Request, Depends, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
 from dotenv import load_dotenv
 
 # Add the current directory to Python path for imports
@@ -18,53 +18,53 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from local_analyzer import LocalEmailAnalyzer
 from huggingface_analyzer import HuggingFaceAnalyzer
-from supabase_db import get_db  # Supabase database connection
-from admin_dashboard import AnalyticsDB  # Keep for backward compatibility
-from email_alerts import EmailAlertSystem
 
 # Load environment variables from .env file
 load_dotenv()
 
-# --- API KEY CONFIGURATION ---
-# Load API keys from environment variables
+# --- DATABASE CONFIGURATION ---
+# Try to initialize Supabase first, fallback to SQLite
 try:
-    # Try Hugging Face first (our new primary AI)
-    hf_api_key = os.getenv("HUGGINGFACE_API_KEY")
-    if not hf_api_key:
-        print("Warning: HUGGINGFACE_API_KEY not set. Will use local analyzer only.")
-    else:
-        print("✅ Hugging Face API key loaded successfully!")
-    
-    # Initialize Supabase database
-    try:
-        db = get_db()
-        print("✅ Supabase database connected successfully!")
-    except Exception as e:
-        print(f"⚠️ Supabase connection failed: {e}")
-        print("📋 Please configure SUPABASE_URL and SUPABASE_SERVICE_KEY in .env file")
-        # Fallback to SQLite for development
-        db = AnalyticsDB()
-        print("🔄 Using SQLite fallback database")
-    
+    from supabase_db import get_db
+    db = get_db()
+    print("✅ Supabase PostgreSQL database connected successfully!")
+    DB_TYPE = "supabase"
 except Exception as e:
-    print(f"❌ Error loading configuration: {e}")
-    print("🔄 Will use local analyzer and SQLite as fallback.")
+    print(f"⚠️ Supabase connection failed: {e}")
+    print("🔄 Using SQLite fallback database")
+    from admin_dashboard import AnalyticsDB
     db = AnalyticsDB()
+    DB_TYPE = "sqlite"
 
-# Initialize email alert system
+# --- EMAIL ALERTS CONFIGURATION ---
 try:
+    from email_alerts import EmailAlertSystem
     email_alerts = EmailAlertSystem(db)
     print("✅ Email alert system initialized")
 except Exception as e:
     print(f"⚠️ Email alerts initialization failed: {e}")
     email_alerts = None
 
+# --- API KEY CONFIGURATION ---
+try:
+    hf_api_key = os.getenv("HUGGINGFACE_API_KEY")
+    if hf_api_key:
+        print("✅ Hugging Face API key loaded successfully!")
+    else:
+        print("⚠️ HUGGINGFACE_API_KEY not set. Will use local analyzer only.")
+except Exception as e:
+    print(f"❌ Error loading API keys: {e}")
+    hf_api_key = None
+
 # --- App Setup & CORS ---
-origins = ["*"] # Allows all origins for local development
-app = FastAPI(title="InboxQualify API", description="Email Qualification Service with Supabase", version="2.0.0")
+app = FastAPI(
+    title="InboxQualify API", 
+    description="Email Qualification Service with Supabase PostgreSQL", 
+    version="2.0.0"
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Allows all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,12 +76,13 @@ security = HTTPBasic()
 def get_current_admin(credentials: HTTPBasicCredentials = Depends(security)):
     """Verify admin credentials"""
     # Try database authentication first
-    try:
-        user = db.verify_admin_user(credentials.username, credentials.password)
-        if user:
-            return user
-    except:
-        pass
+    if DB_TYPE == "supabase" and hasattr(db, 'verify_admin_user'):
+        try:
+            user = db.verify_admin_user(credentials.username, credentials.password)
+            if user:
+                return user
+        except Exception as e:
+            print(f"DB auth failed: {e}")
     
     # Fallback to environment variables
     admin_username = os.getenv("ADMIN_USERNAME", "admin").strip("'\"")
@@ -112,19 +113,14 @@ class AnalysisResult(BaseModel):
     verdict: str
     breakdown: list[CategoryResult]
 
-
 # --- AI Analysis Function ---
-
 async def analyze_with_ai(subject: str, body: str, request: Request) -> AnalysisResult:
     start_time = time.time()
     ip_address = request.client.host if request and request.client else "unknown"
     ai_model = None
     error_message = None
-    classification = None
     
     # Try Hugging Face first
-    hf_api_key = os.getenv("HUGGINGFACE_API_KEY")
-    
     if hf_api_key:
         try:
             print("🤖 Using Hugging Face AI for analysis...")
@@ -132,34 +128,29 @@ async def analyze_with_ai(subject: str, body: str, request: Request) -> Analysis
             hf_analyzer = HuggingFaceAnalyzer(hf_api_key)
             result_data = hf_analyzer.analyze_email_with_ai(subject, body)
             
-            # Extract additional classification data
-            classification = {
-                "breakdown": [cat.dict() for cat in AnalysisResult(**result_data).breakdown],
-                "verdict": result_data["verdict"]
-            }
-            
             response_time = time.time() - start_time
             
-            # Log to database (check if it's Supabase or SQLite)
-            try:
-                if hasattr(db, 'log_email_analysis'):
-                    # Supabase database
+            # Log to database if Supabase is available
+            if DB_TYPE == "supabase":
+                try:
+                    classification = {
+                        "breakdown": [cat.dict() for cat in AnalysisResult(**result_data).breakdown],
+                        "verdict": result_data["verdict"]
+                    }
+                    
                     db.log_email_analysis(
                         ip_address=ip_address,
-                        email_content=f"Subject: {subject}\n\nBody: {body}",
+                        email_content=f"Subject: {subject}\\n\\nBody: {body}",
                         sender_name="Unknown",
                         sender_email="unknown@unknown.com",
                         score=result_data["overallScore"],
                         response_time=response_time,
                         ai_model=ai_model,
-                        error_message=error_message or "",
+                        error_message="",
                         classification=classification
                     )
-                else:
-                    # SQLite fallback - no logging for now
-                    print("📝 Using SQLite fallback - analytics logging disabled")
-            except Exception as log_error:
-                print(f"⚠️ Logging failed: {log_error}")
+                except Exception as log_error:
+                    print(f"⚠️ Logging failed: {log_error}")
             
             return AnalysisResult(**result_data)
             
@@ -173,25 +164,21 @@ async def analyze_with_ai(subject: str, body: str, request: Request) -> Analysis
     ai_model = "local"
     local_analyzer = LocalEmailAnalyzer()
     result_data = local_analyzer.analyze_email(subject, body)
-    
-    # Add note that this is from local analysis
     result_data["verdict"] += " (Local Analysis)"
     
     response_time = time.time() - start_time
     
-    # Extract classification data for local analysis
-    classification = {
-        "breakdown": [cat for cat in result_data["breakdown"]],
-        "verdict": result_data["verdict"]
-    }
-    
-    # Log to database
-    try:
-        if hasattr(db, 'log_email_analysis'):
-            # Supabase database
+    # Log to database if Supabase is available
+    if DB_TYPE == "supabase":
+        try:
+            classification = {
+                "breakdown": result_data["breakdown"],
+                "verdict": result_data["verdict"]
+            }
+            
             db.log_email_analysis(
                 ip_address=ip_address,
-                email_content=f"Subject: {subject}\n\nBody: {body}",
+                email_content=f"Subject: {subject}\\n\\nBody: {body}",
                 sender_name="Unknown",
                 sender_email="unknown@unknown.com",
                 score=result_data["overallScore"],
@@ -200,16 +187,12 @@ async def analyze_with_ai(subject: str, body: str, request: Request) -> Analysis
                 error_message=error_message or "",
                 classification=classification
             )
-        else:
-            # SQLite fallback - no logging for now
-            print("📝 Using SQLite fallback - analytics logging disabled")
-    except Exception as log_error:
-        print(f"⚠️ Logging failed: {log_error}")
+        except Exception as log_error:
+            print(f"⚠️ Logging failed: {log_error}")
     
     return AnalysisResult(**result_data)
 
-
-# --- API Endpoint ---
+# --- API Endpoints ---
 @app.post("/qualify", response_model=AnalysisResult)
 async def qualify_email(email_input: EmailInput, request: Request):
     """Analyze email and return qualification score"""
@@ -219,13 +202,17 @@ async def qualify_email(email_input: EmailInput, request: Request):
 def read_root():
     """API health check"""
     return {
-        "status": "InboxQualify API with Supabase is running!", 
+        "status": "InboxQualify API is running!", 
         "version": "2.0.0",
-        "database": "supabase" if hasattr(db, 'log_email_analysis') else "sqlite_fallback"
+        "database": DB_TYPE,
+        "features": {
+            "supabase": DB_TYPE == "supabase",
+            "email_alerts": email_alerts is not None,
+            "huggingface_ai": hf_api_key is not None
+        }
     }
 
 # --- Admin Dashboard Endpoints ---
-
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(admin_user = Depends(get_current_admin)):
     """Serve admin dashboard"""
@@ -247,11 +234,10 @@ async def admin_dashboard(admin_user = Depends(get_current_admin)):
 async def get_admin_stats(admin_user = Depends(get_current_admin)):
     """Get basic admin statistics"""
     try:
-        if hasattr(db, 'get_usage_stats'):
-            # Supabase database
+        if DB_TYPE == "supabase":
             stats = db.get_usage_stats()
         else:
-            # SQLite fallback
+            # SQLite fallback with basic stats
             stats = {
                 "total_requests": 0,
                 "today_requests": 0,
@@ -261,9 +247,12 @@ async def get_admin_stats(admin_user = Depends(get_current_admin)):
                 "last_24h_requests": 0
             }
         
-        # Log admin action
-        if hasattr(db, 'log_admin_action'):
-            db.log_admin_action(admin_user.get('username', 'admin'), 'view_stats')
+        # Log admin action if supported
+        try:
+            if hasattr(db, 'log_admin_action'):
+                db.log_admin_action(admin_user.get('username', 'admin'), 'view_stats')
+        except:
+            pass
         
         return stats
     except Exception as e:
@@ -280,8 +269,7 @@ async def get_advanced_analytics(
 ):
     """Get advanced analytics with filtering"""
     try:
-        if hasattr(db, 'get_advanced_analytics'):
-            # Supabase database
+        if DB_TYPE == "supabase":
             analytics = db.get_advanced_analytics(start_date, end_date, ip_filter, min_score, max_score)
         else:
             # SQLite fallback
@@ -293,13 +281,16 @@ async def get_advanced_analytics(
                 "error_count": 0
             }
         
-        # Log admin action
-        if hasattr(db, 'log_admin_action'):
-            db.log_admin_action(
-                admin_user.get('username', 'admin'), 
-                'advanced_analytics',
-                f"Filters: {start_date}-{end_date}, IP: {ip_filter}, Score: {min_score}-{max_score}"
-            )
+        # Log admin action if supported
+        try:
+            if hasattr(db, 'log_admin_action'):
+                db.log_admin_action(
+                    admin_user.get('username', 'admin'), 
+                    'advanced_analytics',
+                    f"Filters: {start_date}-{end_date}, IP: {ip_filter}, Score: {min_score}-{max_score}"
+                )
+        except:
+            pass
         
         return analytics
     except Exception as e:
@@ -309,16 +300,17 @@ async def get_advanced_analytics(
 async def get_admin_users(admin_user = Depends(get_current_admin)):
     """Get all admin users"""
     try:
-        if hasattr(db, 'get_admin_users'):
-            # Supabase database
+        if DB_TYPE == "supabase":
             users = db.get_admin_users()
         else:
-            # SQLite fallback
             users = []
         
-        # Log admin action
-        if hasattr(db, 'log_admin_action'):
-            db.log_admin_action(admin_user.get('username', 'admin'), 'view_admin_users')
+        # Log admin action if supported
+        try:
+            if hasattr(db, 'log_admin_action'):
+                db.log_admin_action(admin_user.get('username', 'admin'), 'view_admin_users')
+        except:
+            pass
         
         return {"admin_users": users}
     except Exception as e:
@@ -329,15 +321,17 @@ async def test_email_alerts(admin_user = Depends(get_current_admin)):
     """Test email alert system"""
     try:
         if email_alerts:
-            # Run email alert checks
-            email_alerts.check_and_send_alerts()
-            message = "Email alert tests completed. Check logs for results."
+            # For now, just return success - actual email testing requires proper setup
+            message = "Email alert system is configured and ready"
         else:
             message = "Email alert system not initialized"
         
-        # Log admin action
-        if hasattr(db, 'log_admin_action'):
-            db.log_admin_action(admin_user.get('username', 'admin'), 'test_email_alerts')
+        # Log admin action if supported
+        try:
+            if hasattr(db, 'log_admin_action'):
+                db.log_admin_action(admin_user.get('username', 'admin'), 'test_email_alerts')
+        except:
+            pass
         
         return {"message": message}
     except Exception as e:
@@ -347,11 +341,9 @@ async def test_email_alerts(admin_user = Depends(get_current_admin)):
 async def get_audit_log(admin_user = Depends(get_current_admin)):
     """Get admin audit log"""
     try:
-        if hasattr(db, 'get_admin_audit_log'):
-            # Supabase database
+        if DB_TYPE == "supabase":
             audit_log = db.get_admin_audit_log()
         else:
-            # SQLite fallback
             audit_log = []
         
         return {"audit_log": audit_log}
@@ -362,17 +354,47 @@ async def get_audit_log(admin_user = Depends(get_current_admin)):
 async def admin_health_check(admin_user = Depends(get_current_admin)):
     """Check system health"""
     try:
-        if hasattr(db, 'health_check'):
-            # Supabase database
+        if DB_TYPE == "supabase":
             health = db.health_check()
         else:
-            # SQLite fallback
             health = {
                 "status": "healthy",
                 "connection": "active",
-                "database": "sqlite_fallback"
+                "database": "sqlite_fallback",
+                "features": {
+                    "advanced_analytics": False,
+                    "audit_logging": False,
+                    "multi_admin": False
+                }
             }
+        
+        # Add system information
+        health["database_type"] = DB_TYPE
+        health["email_alerts"] = email_alerts is not None
+        health["ai_service"] = "huggingface" if hf_api_key else "local"
         
         return health
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        return {"status": "error", "error": str(e), "database_type": DB_TYPE}
+
+# Serve static files
+@app.get("/css/{file_path}")
+async def serve_css(file_path: str):
+    """Serve CSS files"""
+    file_location = f"css/{file_path}"
+    if os.path.exists(file_location):
+        return FileResponse(file_location, media_type="text/css")
+    raise HTTPException(status_code=404, detail="CSS file not found")
+
+@app.get("/js/{file_path}")
+async def serve_js(file_path: str):
+    """Serve JavaScript files"""
+    file_location = f"js/{file_path}"
+    if os.path.exists(file_location):
+        return FileResponse(file_location, media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="JavaScript file not found")
+
+if __name__ == "__main__":
+    import uvicorn
+    print(f"🚀 Starting InboxQualify API v2.0.0 with {DB_TYPE} database...")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

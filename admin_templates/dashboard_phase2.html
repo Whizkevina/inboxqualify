@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InboxQualify Admin Dashboard - Phase 2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-tabs {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0;
+        }
+
+        .nav-tabs-container {
+            display: flex;
+            gap: 0;
+        }
+
+        .nav-tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: #f8fafc;
+        }
+
+        .nav-tab:hover {
+            color: #374151;
+            background: #f9fafb;
+        }
+
+        .dashboard {
+            padding: 2rem 0;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-card.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .stat-card.success {
+            border-left-color: #10b981;
+        }
+
+        .stat-card.danger {
+            border-left-color: #ef4444;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .section-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+
+        .filter-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .btn.secondary {
+            background: #6b7280;
+        }
+
+        .btn.secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn.danger {
+            background: #ef4444;
+        }
+
+        .btn.danger:hover {
+            background: #dc2626;
+        }
+
+        .btn.success {
+            background: #10b981;
+        }
+
+        .btn.success:hover {
+            background: #059669;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .alert.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .alert.success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-form {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs-container {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">📊 InboxQualify Admin - Phase 2</div>
+                <div class="admin-info">
+                    <span>Welcome, {{ admin_user }}</span>
+                    <a href="#" class="logout-btn" onclick="logout()">🚪 Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav-tabs">
+        <div class="container">
+            <div class="nav-tabs-container">
+                <button class="nav-tab active" onclick="showTab('overview')">📊 Overview</button>
+                <button class="nav-tab" onclick="showTab('analytics')">📈 Advanced Analytics</button>
+                <button class="nav-tab" onclick="showTab('users')">👥 Admin Users</button>
+                <button class="nav-tab" onclick="showTab('alerts')">🚨 Email Alerts</button>
+                <button class="nav-tab" onclick="showTab('audit')">📋 Audit Log</button>
+                <button class="nav-tab" onclick="showTab('export')">💾 Export</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <div class="container">
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ dashboard_data.overall_stats.total_requests }}</div>
+                        <div class="stat-label">Total Requests (30 days)</div>
+                    </div>
+                    
+                    <div class="stat-card success">
+                        <div class="stat-number">{{ dashboard_data.overall_stats.success_rate }}%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    
+                    <div class="stat-card warning">
+                        <div class="stat-number">{{ dashboard_data.overall_stats.ai_enhanced_requests }}</div>
+                        <div class="stat-label">AI Enhanced</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-number">{{ dashboard_data.overall_stats.avg_processing_time }}ms</div>
+                        <div class="stat-label">Avg Processing Time</div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <h3 class="section-title">Quick Actions</h3>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="btn" onclick="runAlertChecks()">🔍 Run Alert Checks</button>
+                        <button class="btn secondary" onclick="exportData('csv')">📋 Export CSV</button>
+                        <button class="btn danger" onclick="clearOldData()">🗑️ Clear Old Data</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Analytics Tab -->
+            <div id="analytics" class="tab-content">
+                <div class="section-card">
+                    <h3 class="section-title">🔍 Advanced Analytics Filters</h3>
+                    
+                    <form class="filter-form" onsubmit="loadAdvancedAnalytics(event)">
+                        <div class="form-group">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-input" id="startDate">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-input" id="endDate">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">IP Filter</label>
+                            <input type="text" class="form-input" id="ipFilter" placeholder="e.g., 192.168">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Min Score</label>
+                            <input type="number" class="form-input" id="scoreMin" min="0" max="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Max Score</label>
+                            <input type="number" class="form-input" id="scoreMax" min="0" max="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn">🔍 Apply Filters</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="advancedAnalyticsResults" class="section-card" style="display: none;">
+                    <h3 class="section-title">📊 Filtered Results</h3>
+                    <div id="filteredStats"></div>
+                    <div class="chart-container">
+                        <canvas id="scoreDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Users Tab -->
+            <div id="users" class="tab-content">
+                <div class="section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 class="section-title">👥 Admin Users</h3>
+                        <button class="btn" onclick="showCreateUserForm()">➕ Add New Admin</button>
+                    </div>
+
+                    <div id="createUserForm" style="display: none; background: #f9fafb; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <h4>Create New Admin User</h4>
+                        <form class="filter-form" onsubmit="createAdminUser(event)">
+                            <div class="form-group">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-input" id="newUsername" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-input" id="newPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-input" id="newEmail">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Role</label>
+                                <select class="form-input" id="newRole">
+                                    <option value="admin">Admin</option>
+                                    <option value="viewer">Viewer</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">&nbsp;</label>
+                                <div>
+                                    <button type="submit" class="btn success">➕ Create User</button>
+                                    <button type="button" class="btn secondary" onclick="hideCreateUserForm()">❌ Cancel</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="adminUsersList">
+                        <div class="alert info">
+                            <strong>📝 Note:</strong> Click "Load Admin Users" to view all admin accounts.
+                        </div>
+                        <button class="btn" onclick="loadAdminUsers()">📋 Load Admin Users</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Alerts Tab -->
+            <div id="alerts" class="tab-content">
+                <div class="section-card">
+                    <h3 class="section-title">🚨 Email Alert System</h3>
+                    
+                    <div class="alert info">
+                        <strong>💡 Setup Required:</strong> Configure email settings in your .env file:
+                        <ul style="margin-top: 0.5rem;">
+                            <li>SMTP_SERVER=smtp.gmail.com</li>
+                            <li>SMTP_PORT=587</li>
+                            <li>SMTP_USERNAME=your-email@gmail.com</li>
+                            <li>SMTP_PASSWORD=your-app-password</li>
+                            <li>ADMIN_EMAIL=admin@yourcompany.com</li>
+                        </ul>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+                        <button class="btn" onclick="testEmailAlerts()">🧪 Test Alert System</button>
+                        <button class="btn secondary" onclick="showAlertSettings()">⚙️ Alert Settings</button>
+                    </div>
+
+                    <div id="alertTestResults" style="margin-top: 1rem;"></div>
+                </div>
+
+                <div class="section-card">
+                    <h3 class="section-title">📊 Alert Types</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Alert Type</th>
+                                <th>Trigger Condition</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>High Error Rate</td>
+                                <td>Error rate > 10% in last hour</td>
+                                <td><span class="badge success">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td>High Usage</td>
+                                <td>3x higher than 7-day average</td>
+                                <td><span class="badge success">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td>API Failures</td>
+                                <td>5+ consecutive AI failures</td>
+                                <td><span class="badge success">Active</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Log Tab -->
+            <div id="audit" class="tab-content">
+                <div class="section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 class="section-title">📋 Admin Audit Log</h3>
+                        <button class="btn" onclick="loadAuditLog()">🔄 Refresh Log</button>
+                    </div>
+
+                    <div id="auditLogResults">
+                        <div class="alert info">
+                            <strong>📝 Note:</strong> The audit log tracks all admin actions for security and compliance.
+                        </div>
+                        <button class="btn" onclick="loadAuditLog()">📋 Load Audit Log</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Tab -->
+            <div id="export" class="tab-content">
+                <div class="section-card">
+                    <h3 class="section-title">💾 Data Export & Management</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <div style="background: #f9fafb; padding: 1rem; border-radius: 8px;">
+                            <h4>📊 Export Analytics</h4>
+                            <p style="font-size: 0.9rem; color: #6b7280; margin: 0.5rem 0;">Download complete analytics data</p>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn" onclick="exportData('csv')">📋 CSV</button>
+                                <button class="btn secondary" onclick="exportData('json')">📄 JSON</button>
+                            </div>
+                        </div>
+
+                        <div style="background: #f9fafb; padding: 1rem; border-radius: 8px;">
+                            <h4>🗑️ Data Cleanup</h4>
+                            <p style="font-size: 0.9rem; color: #6b7280; margin: 0.5rem 0;">Remove old data to free up space</p>
+                            <button class="btn danger" onclick="clearOldData()">🗑️ Clear 30+ Days</button>
+                        </div>
+
+                        <div style="background: #f9fafb; padding: 1rem; border-radius: 8px;">
+                            <h4>📈 Generate Report</h4>
+                            <p style="font-size: 0.9rem; color: #6b7280; margin: 0.5rem 0;">Create detailed PDF report</p>
+                            <button class="btn secondary" onclick="generateReport()">📈 PDF Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all nav tabs
+            document.querySelectorAll('.nav-tab').forEach(navTab => {
+                navTab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to selected nav tab
+            event.target.classList.add('active');
+        }
+
+        // Logout functionality
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = '/';
+            }
+        }
+
+        // Advanced Analytics
+        async function loadAdvancedAnalytics(event) {
+            event.preventDefault();
+            
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const ipFilter = document.getElementById('ipFilter').value;
+            const scoreMin = document.getElementById('scoreMin').value;
+            const scoreMax = document.getElementById('scoreMax').value;
+            
+            const params = new URLSearchParams();
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            if (ipFilter) params.append('ip_filter', ipFilter);
+            if (scoreMin) params.append('score_min', scoreMin);
+            if (scoreMax) params.append('score_max', scoreMax);
+            
+            try {
+                const response = await fetch(`/admin/analytics/advanced?${params}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    displayAdvancedAnalytics(data);
+                } else {
+                    alert('Failed to load advanced analytics');
+                }
+            } catch (error) {
+                alert('Error loading analytics: ' + error.message);
+            }
+        }
+
+        function displayAdvancedAnalytics(data) {
+            const resultsDiv = document.getElementById('advancedAnalyticsResults');
+            const statsDiv = document.getElementById('filteredStats');
+            
+            // Display filtered stats
+            statsDiv.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">${data.filtered_stats.total_requests}</div>
+                        <div class="stat-label">Filtered Requests</div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-number">${data.filtered_stats.avg_score}</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-number">${data.filtered_stats.ai_enhanced_count}</div>
+                        <div class="stat-label">AI Enhanced</div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="stat-number">${data.filtered_stats.error_count}</div>
+                        <div class="stat-label">Errors</div>
+                    </div>
+                </div>
+            `;
+            
+            // Show chart
+            createScoreDistributionChart(data.score_distribution);
+            
+            resultsDiv.style.display = 'block';
+        }
+
+        function createScoreDistributionChart(distributionData) {
+            const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: distributionData.map(d => d.range),
+                    datasets: [{
+                        data: distributionData.map(d => d.count),
+                        backgroundColor: [
+                            '#10b981',  // Excellent - Green
+                            '#3b82f6',  // Good - Blue
+                            '#f59e0b',  // Fair - Yellow
+                            '#ef4444'   // Poor - Red
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Score Distribution'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Admin Users Management
+        function showCreateUserForm() {
+            document.getElementById('createUserForm').style.display = 'block';
+        }
+
+        function hideCreateUserForm() {
+            document.getElementById('createUserForm').style.display = 'none';
+        }
+
+        async function createAdminUser(event) {
+            event.preventDefault();
+            
+            const userData = {
+                username: document.getElementById('newUsername').value,
+                password: document.getElementById('newPassword').value,
+                email: document.getElementById('newEmail').value,
+                role: document.getElementById('newRole').value
+            };
+            
+            try {
+                const response = await fetch('/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                if (response.ok) {
+                    alert('Admin user created successfully!');
+                    hideCreateUserForm();
+                    loadAdminUsers();
+                } else {
+                    const error = await response.json();
+                    alert('Failed to create user: ' + error.detail);
+                }
+            } catch (error) {
+                alert('Error creating user: ' + error.message);
+            }
+        }
+
+        async function loadAdminUsers() {
+            try {
+                const response = await fetch('/admin/users');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayAdminUsers(data.admin_users);
+                } else {
+                    alert('Failed to load admin users');
+                }
+            } catch (error) {
+                alert('Error loading users: ' + error.message);
+            }
+        }
+
+        function displayAdminUsers(users) {
+            const listDiv = document.getElementById('adminUsersList');
+            
+            if (users.length === 0) {
+                listDiv.innerHTML = '<div class="alert info">No admin users found.</div>';
+                return;
+            }
+            
+            const tableHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created</th>
+                            <th>Last Login</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td>${user.username}</td>
+                                <td>${user.email || 'N/A'}</td>
+                                <td><span class="badge ${user.role === 'admin' ? 'success' : 'warning'}">${user.role}</span></td>
+                                <td>${user.created_at}</td>
+                                <td>${user.last_login || 'Never'}</td>
+                                <td><span class="badge ${user.is_active ? 'success' : 'danger'}">${user.is_active ? 'Active' : 'Inactive'}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            listDiv.innerHTML = tableHTML;
+        }
+
+        // Email Alerts
+        async function testEmailAlerts() {
+            try {
+                const response = await fetch('/admin/alerts/test', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('alertTestResults').innerHTML = `
+                        <div class="alert success">
+                            <strong>✅ Alert Test Complete:</strong> ${result.message}
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('alertTestResults').innerHTML = `
+                        <div class="alert warning">
+                            <strong>⚠️ Alert Test Failed:</strong> Check your email configuration.
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('alertTestResults').innerHTML = `
+                    <div class="alert warning">
+                        <strong>❌ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Audit Log
+        async function loadAuditLog() {
+            try {
+                const response = await fetch('/admin/audit-log');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayAuditLog(data.audit_logs);
+                } else {
+                    alert('Failed to load audit log');
+                }
+            } catch (error) {
+                alert('Error loading audit log: ' + error.message);
+            }
+        }
+
+        function displayAuditLog(logs) {
+            const resultsDiv = document.getElementById('auditLogResults');
+            
+            if (logs.length === 0) {
+                resultsDiv.innerHTML = '<div class="alert info">No audit log entries found.</div>';
+                return;
+            }
+            
+            const tableHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Admin</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${logs.map(log => `
+                            <tr>
+                                <td>${log.timestamp}</td>
+                                <td>${log.username}</td>
+                                <td><span class="badge success">${log.action}</span></td>
+                                <td>${log.details || 'N/A'}</td>
+                                <td>${log.ip_address || 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            resultsDiv.innerHTML = tableHTML;
+        }
+
+        // Export functions
+        async function exportData(format) {
+            try {
+                const response = await fetch(`/admin/export?format=${format}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `inboxqualify_data_${new Date().toISOString().split('T')[0]}.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Export failed. Please try again.');
+                }
+            } catch (error) {
+                alert('Export failed: ' + error.message);
+            }
+        }
+
+        async function clearOldData() {
+            if (confirm('This will permanently delete data older than 30 days. Are you sure?')) {
+                try {
+                    const response = await fetch('/admin/cleanup', {
+                        method: 'POST'
+                    });
+                    if (response.ok) {
+                        const result = await response.json();
+                        alert(`✅ Success: ${result.message}`);
+                    } else {
+                        alert('Failed to clear old data.');
+                    }
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            }
+        }
+
+        async function runAlertChecks() {
+            try {
+                const response = await fetch('/admin/alerts/test', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('✅ Alert checks completed! Check your email and logs.');
+                } else {
+                    alert('⚠️ Alert checks failed. Check configuration.');
+                }
+            } catch (error) {
+                alert('❌ Error running alert checks: ' + error.message);
+            }
+        }
+
+        function generateReport() {
+            alert('📈 PDF report generation will be implemented in the next phase!');
+        }
+
+        function showAlertSettings() {
+            alert('⚙️ Alert settings management will be implemented in the next phase!');
+        }
+    </script>
+</body>
+</html>

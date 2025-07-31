@@ -1,0 +1,2 @@
+Timestamp,IP,User Agent,Subject Length,Body Length,Score,AI Enhanced,Processing Time (ms),Error,Error Message
+2025-07-31 15:17:07,127.0.0.1,curl/8.7.1,23,477,38,True,2353,False,
