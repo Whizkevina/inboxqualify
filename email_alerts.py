@@ -61,91 +61,160 @@ class EmailAlertSystem:
     
     def check_error_rate_alert(self):
         """Check if error rate exceeds threshold"""
-        conn = sqlite3.connect(self.analytics_db.db_path)
-        cursor = conn.cursor()
-        
-        # Check error rate in last hour
-        one_hour_ago = datetime.now() - timedelta(hours=1)
-        cursor.execute('''
-            SELECT 
-                COUNT(*) as total_requests,
-                SUM(CASE WHEN error_occurred = 1 THEN 1 ELSE 0 END) as error_count
-            FROM usage_logs 
-            WHERE timestamp >= ?
-        ''', (one_hour_ago,))
-        
-        result = cursor.fetchone()
-        total_requests = result[0] or 0
-        error_count = result[1] or 0
-        
-        if total_requests > 0:
-            error_rate = (error_count / total_requests) * 100
+        try:
+            # Use Supabase if available, otherwise fall back to SQLite
+            if hasattr(self.analytics_db, 'supabase') and self.analytics_db.supabase:
+                # Get error rate from Supabase
+                one_hour_ago = (datetime.now() - timedelta(hours=1)).isoformat()
+                
+                # Query Supabase for recent logs using correct table name
+                response = self.analytics_db.supabase.table('usage_logs').select('*').gte('timestamp', one_hour_ago).execute()
+                
+                if response.data:
+                    total_requests = len(response.data)
+                    error_count = sum(1 for log in response.data if log.get('error_message') is not None)
+                else:
+                    total_requests = 0
+                    error_count = 0
+                    
+            else:
+                # Fall back to SQLite
+                db_path = getattr(self.analytics_db, 'db_path', 'analytics.db')
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                
+                # Check error rate in last hour
+                one_hour_ago = datetime.now() - timedelta(hours=1)
+                cursor.execute('''
+                    SELECT 
+                        COUNT(*) as total_requests,
+                        SUM(CASE WHEN error_occurred = 1 THEN 1 ELSE 0 END) as error_count
+                    FROM usage_logs 
+                    WHERE timestamp >= ?
+                ''', (one_hour_ago,))
+                
+                result = cursor.fetchone()
+                total_requests = result[0] if result else 0
+                error_count = result[1] if result else 0
+                conn.close()
+                
+            if total_requests > 0:
+                error_rate = (error_count / total_requests) * 100
+                
+                # Check if error rate exceeds 10%
+                if error_rate > 10 and total_requests >= 5:  # At least 5 requests
+                    self._send_error_rate_alert(error_rate, error_count, total_requests)
+                    return True
+                    
+            return False
             
-            # Check if error rate exceeds 10%
-            if error_rate > 10 and total_requests >= 5:  # At least 5 requests
-                self._send_error_rate_alert(error_rate, error_count, total_requests)
-        
-        conn.close()
+        except Exception as e:
+            print(f"❌ Error checking error rate: {e}")
+            return False
     
     def check_high_usage_alert(self):
         """Check if usage is unusually high"""
-        conn = sqlite3.connect(self.analytics_db.db_path)
-        cursor = conn.cursor()
-        
-        # Check requests in last hour
-        one_hour_ago = datetime.now() - timedelta(hours=1)
-        cursor.execute('''
-            SELECT COUNT(*) FROM usage_logs 
-            WHERE timestamp >= ?
-        ''', (one_hour_ago,))
-        
-        requests_last_hour = cursor.fetchone()[0] or 0
-        
-        # Get average requests per hour for last 7 days
-        seven_days_ago = datetime.now() - timedelta(days=7)
-        cursor.execute('''
-            SELECT 
-                COUNT(*) / (24 * 7) as avg_requests_per_hour
-            FROM usage_logs 
-            WHERE timestamp >= ?
-        ''', (seven_days_ago,))
-        
-        avg_requests = cursor.fetchone()[0] or 0
-        
-        # Alert if current hour is 3x higher than average
-        if avg_requests > 0 and requests_last_hour > (avg_requests * 3) and requests_last_hour > 50:
-            self._send_high_usage_alert(requests_last_hour, avg_requests)
-        
-        conn.close()
+        try:
+            # Use Supabase if available, otherwise fall back to SQLite
+            if hasattr(self.analytics_db, 'supabase') and self.analytics_db.supabase:
+                # Get usage from Supabase
+                one_hour_ago = (datetime.now() - timedelta(hours=1)).isoformat()
+                seven_days_ago = (datetime.now() - timedelta(days=7)).isoformat()
+                
+                # Get requests in last hour
+                response_hour = self.analytics_db.supabase.table('usage_logs').select('*').gte('timestamp', one_hour_ago).execute()
+                requests_last_hour = len(response_hour.data) if response_hour.data else 0
+                
+                # Get average requests per hour for last 7 days
+                response_week = self.analytics_db.supabase.table('usage_logs').select('*').gte('timestamp', seven_days_ago).execute()
+                total_requests_week = len(response_week.data) if response_week.data else 0
+                avg_requests = total_requests_week / (24 * 7) if total_requests_week > 0 else 0
+                    
+            else:
+                # Fall back to SQLite
+                db_path = getattr(self.analytics_db, 'db_path', 'analytics.db')
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                
+                # Check requests in last hour
+                one_hour_ago = datetime.now() - timedelta(hours=1)
+                cursor.execute('''
+                    SELECT COUNT(*) FROM usage_logs 
+                    WHERE timestamp >= ?
+                ''', (one_hour_ago,))
+                
+                requests_last_hour = cursor.fetchone()[0] or 0
+                
+                # Get average requests per hour for last 7 days
+                seven_days_ago = datetime.now() - timedelta(days=7)
+                cursor.execute('''
+                    SELECT 
+                        COUNT(*) / (24 * 7) as avg_requests_per_hour
+                    FROM usage_logs 
+                    WHERE timestamp >= ?
+                ''', (seven_days_ago,))
+                
+                avg_requests = cursor.fetchone()[0] or 0
+                conn.close()
+                
+            # Alert if current hour is 3x higher than average
+            if avg_requests > 0 and requests_last_hour > (avg_requests * 3) and requests_last_hour > 10:
+                self._send_high_usage_alert(requests_last_hour, avg_requests)
+                return True
+                
+            return False
+            
+        except Exception as e:
+            print(f"❌ Error checking high usage: {e}")
+            return False
     
     def check_api_failure_alert(self):
         """Check for API failures"""
-        conn = sqlite3.connect(self.analytics_db.db_path)
-        cursor = conn.cursor()
-        
-        # Check for consecutive AI failures
-        cursor.execute('''
-            SELECT ai_enhanced, error_occurred, timestamp
-            FROM usage_logs 
-            WHERE timestamp >= datetime('now', '-30 minutes')
-            ORDER BY timestamp DESC
-            LIMIT 10
-        ''')
-        
-        recent_requests = cursor.fetchall()
-        
-        # Count consecutive AI failures
-        consecutive_failures = 0
-        for request in recent_requests:
-            if request[0] == 1 and request[1] == 1:  # AI enhanced but failed
-                consecutive_failures += 1
+        try:
+            # Use Supabase if available, otherwise fall back to SQLite
+            if hasattr(self.analytics_db, 'supabase') and self.analytics_db.supabase:
+                # Get recent failures from Supabase
+                thirty_mins_ago = (datetime.now() - timedelta(minutes=30)).isoformat()
+                
+                response = self.analytics_db.supabase.table('usage_logs').select('ai_model, error_message, timestamp').gte('timestamp', thirty_mins_ago).order('timestamp', desc=True).execute()
+                
+                recent_logs = response.data if response.data else []
+                    
             else:
-                break
-        
-        if consecutive_failures >= 5:
-            self._send_api_failure_alert(consecutive_failures)
-        
-        conn.close()
+                # Fall back to SQLite
+                db_path = getattr(self.analytics_db, 'db_path', 'analytics.db')
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                
+                # Check for consecutive AI failures
+                cursor.execute('''
+                    SELECT ai_enhanced, error_occurred, timestamp
+                    FROM usage_logs 
+                    WHERE timestamp >= datetime('now', '-30 minutes')
+                    ORDER BY timestamp DESC
+                ''')
+                
+                recent_logs = cursor.fetchall()
+                conn.close()
+                
+            # Convert to consistent format for analysis
+            if hasattr(self.analytics_db, 'supabase') and self.analytics_db.supabase:
+                # Supabase data is already in dict format - check for failures
+                failures = [log for log in recent_logs if log.get('error_message') is not None]
+            else:
+                # SQLite data needs conversion
+                failures = [log for log in recent_logs if log[0] == 0 or log[1] == 1]  # ai_enhanced=False or error_occurred=True
+                
+            # Alert if more than 5 failures in 30 minutes
+            if len(failures) >= 5:
+                self._send_api_failure_alert(len(failures))
+                return True
+                
+            return False
+            
+        except Exception as e:
+            print(f"❌ Error checking API failures: {e}")
+            return False
     
     def _send_error_rate_alert(self, error_rate: float, error_count: int, total_requests: int):
         """Send error rate alert"""
@@ -300,6 +369,10 @@ class EmailAlertSystem:
         self.check_high_usage_alert()
         self.check_api_failure_alert()
         print("✅ Email alert checks completed")
+    
+    def check_and_send_alerts(self):
+        """Check and send all alerts - alias for run_all_checks"""
+        return self.run_all_checks()
 
 # Initialize email alert system
 def create_email_alert_system(analytics_db):

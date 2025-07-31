@@ -23,10 +23,44 @@ class SupabaseDB:
         if not self.supabase_url or not self.supabase_key:
             raise ValueError("Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_SERVICE_KEY in .env file")
         
-        self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
+        # Create Supabase client with SSL error handling
+        try:
+            self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
+        except Exception as e:
+            print(f"⚠️ Supabase client creation warning: {e}")
+            # Still create client, but with awareness of potential SSL issues
+            self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
         
         # Initialize database schema on first connection
         self.initialize_database()
+    
+    def _execute_with_retry(self, operation, max_retries=2):
+        """Execute Supabase operation with retry logic for SSL errors"""
+        import time
+        import ssl
+        
+        for attempt in range(max_retries + 1):
+            try:
+                return operation()
+            except Exception as e:
+                error_str = str(e).lower()
+                
+                # Check for SSL-related errors
+                if any(ssl_error in error_str for ssl_error in [
+                    'ssl', 'sslv3_alert_bad_record_mac', 'certificate', 'handshake'
+                ]):
+                    if attempt < max_retries:
+                        print(f"🔄 SSL error on attempt {attempt + 1}, retrying in {attempt + 1}s...")
+                        time.sleep(attempt + 1)  # Progressive backoff
+                        continue
+                    else:
+                        print(f"❌ SSL error after {max_retries + 1} attempts: {e}")
+                        return None
+                else:
+                    # Non-SSL error, don't retry
+                    raise e
+        
+        return None
     
     def initialize_database(self):
         """Initialize all required tables in Supabase PostgreSQL"""
@@ -134,31 +168,46 @@ class SupabaseDB:
     
     def get_usage_stats(self) -> Dict[str, Any]:
         """Get comprehensive usage statistics from Supabase"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
-            # Total requests
-            total_result = self.supabase.table('usage_logs').select('id', count='exact').execute()
-            total_requests = total_result.count
+            logger.info("Fetching usage statistics from Supabase")
+            
+            # Total requests with retry logic for SSL issues
+            total_result = self._execute_with_retry(
+                lambda: self.supabase.table('usage_logs').select('id', count='exact').execute()
+            )
+            total_requests = total_result.count if total_result else 0
             
             # Today's requests
             today = datetime.now().date()
-            today_result = self.supabase.table('usage_logs')\
-                .select('id', count='exact')\
-                .gte('timestamp', today.isoformat())\
-                .execute()
-            today_requests = today_result.count
+            today_result = self._execute_with_retry(
+                lambda: self.supabase.table('usage_logs')\
+                    .select('id', count='exact')\
+                    .gte('timestamp', today.isoformat())\
+                    .execute()
+            )
+            today_requests = today_result.count if today_result else 0
             
             # Average score
-            avg_result = self.supabase.rpc('get_average_score').execute()
-            avg_score = avg_result.data if avg_result.data else 0
+            avg_result = self._execute_with_retry(
+                lambda: self.supabase.rpc('get_average_score').execute()
+            )
+            avg_score = avg_result.data if avg_result and avg_result.data else 0
             
             # Error rate
-            error_result = self.supabase.table('usage_logs')\
-                .select('id', count='exact')\
-                .not_.is_('error_message', 'null')\
-                .execute()
-            error_count = error_result.count
+            error_result = self._execute_with_retry(
+                lambda: self.supabase.table('usage_logs')\
+                    .select('id', count='exact')\
+                    .not_.is_('error_message', 'null')\
+                    .execute()
+            )
+            error_count = error_result.count if error_result else 0
             
             error_rate = (error_count / total_requests * 100) if total_requests > 0 else 0
+            
+            logger.info(f"Successfully retrieved stats: {total_requests} total requests")
             
             return {
                 "total_requests": total_requests,
@@ -170,15 +219,32 @@ class SupabaseDB:
             }
             
         except Exception as e:
-            print(f"❌ Error getting usage stats: {str(e)}")
-            return {
-                "total_requests": 0,
-                "today_requests": 0,
-                "average_score": 0,
-                "error_rate": 0,
-                "unique_ips": 0,
-                "last_24h_requests": 0
-            }
+            error_str = str(e).lower()
+            if 'ssl' in error_str or 'certificate' in error_str:
+                print(f"❌ SSL connection error: {str(e)}")
+                # Return proper error state instead of fake data
+                return {
+                    "total_requests": 0,
+                    "today_requests": 0,
+                    "average_score": 0,
+                    "error_rate": 0,
+                    "unique_ips": 0,
+                    "last_24h_requests": 0,
+                    "status": "connection_error",
+                    "message": "Database connection temporarily unavailable"
+                }
+            else:
+                print(f"❌ Error getting usage stats: {str(e)}")
+                return {
+                    "total_requests": 0,
+                    "today_requests": 0,
+                    "average_score": 0,
+                    "error_rate": 0,
+                    "unique_ips": 0,
+                    "last_24h_requests": 0,
+                    "status": "error",
+                    "message": "Unable to retrieve statistics"
+                }
     
     def get_usage_logs(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Get recent usage logs from Supabase"""
@@ -195,9 +261,9 @@ class SupabaseDB:
             print(f"❌ Error getting usage logs: {str(e)}")
             return []
     
-    def get_advanced_analytics(self, start_date: str = None, end_date: str = None,
-                             ip_filter: str = None, min_score: int = None, 
-                             max_score: int = None) -> Dict[str, Any]:
+    def get_advanced_analytics(self, start_date: Optional[str] = None, end_date: Optional[str] = None,
+                             ip_filter: Optional[str] = None, min_score: Optional[int] = None, 
+                             max_score: Optional[int] = None) -> Dict[str, Any]:
         """Get advanced analytics with filtering from Supabase"""
         try:
             query = self.supabase.table('usage_logs').select('*')
@@ -218,7 +284,22 @@ class SupabaseDB:
             logs = result.data
             
             if not logs:
-                return {"filtered_requests": 0, "score_stats": {}, "hourly_data": []}
+                return {
+                    "filtered_requests": 0,
+                    "filtered_stats": {
+                        "total_requests": 0,
+                        "min_score": 0,
+                        "max_score": 0,
+                        "avg_score": 0,
+                        "unique_ips": 0,
+                        "error_count": 0
+                    },
+                    "score_stats": {},
+                    "hourly_data": [],
+                    "unique_ips": 0,
+                    "error_count": 0,
+                    "score_distribution": []
+                }
             
             # Calculate statistics
             scores = [log['score'] for log in logs if log['score'] is not None]
@@ -239,17 +320,53 @@ class SupabaseDB:
             
             hourly_list = [{"hour": h, "requests": hourly_data.get(h, 0)} for h in range(24)]
             
+            # Score distribution for chart
+            score_distribution = []
+            if scores:
+                ranges = [
+                    {"range": "0-20", "count": len([s for s in scores if 0 <= s <= 20])},
+                    {"range": "21-40", "count": len([s for s in scores if 21 <= s <= 40])},
+                    {"range": "41-60", "count": len([s for s in scores if 41 <= s <= 60])},
+                    {"range": "61-80", "count": len([s for s in scores if 61 <= s <= 80])},
+                    {"range": "81-100", "count": len([s for s in scores if 81 <= s <= 100])},
+                ]
+                score_distribution = [r for r in ranges if r["count"] > 0]
+            
             return {
                 "filtered_requests": len(logs),
+                "filtered_stats": {
+                    "total_requests": len(logs),
+                    "min_score": min(scores) if scores else 0,
+                    "max_score": max(scores) if scores else 0,
+                    "avg_score": round(sum(scores) / len(scores), 2) if scores else 0,
+                    "unique_ips": len(set(log['ip_address'] for log in logs if log['ip_address'])),
+                    "error_count": len([log for log in logs if log['error_message']])
+                },
                 "score_stats": score_stats,
                 "hourly_data": hourly_list,
                 "unique_ips": len(set(log['ip_address'] for log in logs if log['ip_address'])),
-                "error_count": len([log for log in logs if log['error_message']])
+                "error_count": len([log for log in logs if log['error_message']]),
+                "score_distribution": score_distribution
             }
             
         except Exception as e:
             print(f"❌ Error getting advanced analytics: {str(e)}")
-            return {"filtered_requests": 0, "score_stats": {}, "hourly_data": []}
+            return {
+                "filtered_requests": 0, 
+                "filtered_stats": {
+                    "total_requests": 0,
+                    "min_score": 0,
+                    "max_score": 0,
+                    "avg_score": 0,
+                    "unique_ips": 0,
+                    "error_count": 0
+                },
+                "score_stats": {}, 
+                "hourly_data": [],
+                "unique_ips": 0,
+                "error_count": 0,
+                "score_distribution": []
+            }
     
     def clear_old_data(self, days_old: int = 30) -> int:
         """Clear data older than specified days from Supabase"""
@@ -327,7 +444,7 @@ class SupabaseDB:
             print(f"❌ Error getting admin users: {str(e)}")
             return []
     
-    def log_admin_action(self, admin_username: str, action: str, details: str = None, ip_address: str = None):
+    def log_admin_action(self, admin_username: str, action: str, details: Optional[str] = None, ip_address: Optional[str] = None):
         """Log admin action to audit trail in Supabase"""
         try:
             data = {
