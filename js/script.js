@@ -3,8 +3,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const emailForm = document.getElementById('email-form');
     const resultsContainer = document.getElementById('results-container');
-    const apiEndpoint = 'http://127.0.0.1:8000/qualify'; // Local backend server
-    // const apiEndpoint = 'https://inboxqualify-api.onrender.com/qualify'; // Production backend server
+    
+    // Use the API configuration for endpoints
+    const apiEndpoint = API_CONFIG.getURL('/qualify');
 
     // === QUICK WINS FEATURES ===
     

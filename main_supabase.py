@@ -645,9 +645,41 @@ async def get_all_templates():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve templates: {str(e)}")
 
+@app.get("/api/templates")
+async def get_all_templates_api():
+    """Get all available email templates (API endpoint to avoid conflicts)"""
+    try:
+        templates = template_generator.get_all_templates()
+        return {
+            "data": templates,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Retrieved {len(templates)} email templates"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve templates: {str(e)}")
+
 @app.post("/templates/generate")
 async def generate_template(request: TemplateRequest):
     """Generate an email template for a specific industry"""
+    try:
+        template_data = template_generator.generate_template(
+            industry=request.industry,
+            variables=request.variables or {}
+        )
+        
+        return {
+            "data": template_data,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Generated {request.industry} template successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate template: {str(e)}")
+
+@app.post("/api/templates/generate")
+async def generate_template_api(request: TemplateRequest):
+    """Generate an email template for a specific industry (API endpoint)"""
     try:
         template_data = template_generator.generate_template(
             industry=request.industry,

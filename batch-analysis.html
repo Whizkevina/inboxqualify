@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="/js/config.js"></script>
     <style>
         .batch-section {
             background: white;
@@ -512,7 +513,7 @@
                 const formData = new FormData();
                 formData.append('file', file);
                 
-                const response = await fetch('/batch/upload-csv', {
+                const response = await fetch(API_CONFIG.getURL('/batch/upload-csv'), {
                     method: 'POST',
                     body: formData
                 });
@@ -581,7 +582,7 @@
             showLoading('Analyzing emails...');
             
             try {
-                const response = await fetch('/batch/analyze', {
+                const response = await fetch(API_CONFIG.getURL('/batch/analyze'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -736,7 +737,7 @@
             if (!currentBatchResult) return;
             
             try {
-                const response = await fetch(`/batch/export/${currentBatchResult.batch_id}`);
+                const response = await fetch(API_CONFIG.getURL(`/batch/export/${currentBatchResult.batch_id}`));
                 
                 if (response.ok) {
                     const blob = await response.blob();
@@ -760,7 +761,7 @@
 
         async function showCampaignResults(campaignId) {
             try {
-                const response = await fetch(`/campaigns/${campaignId}`);
+                const response = await fetch(API_CONFIG.getURL(`/campaigns/${campaignId}`));
                 const data = await response.json();
                 
                 if (data.status === 'success') {

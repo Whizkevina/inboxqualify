@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="/js/config.js"></script>
     <style>
         .template-section {
             background: white;
@@ -364,10 +365,17 @@
         async function loadTemplates() {
             try {
                 console.log('Starting to load templates...');
-                const response = await fetch('/templates');
+                const apiUrl = API_CONFIG.getURL('/api/templates');
+                console.log('API URL:', apiUrl);
+                
+                const response = await fetch(apiUrl);
                 console.log('Response received:', response);
                 console.log('Response status:', response.status);
                 console.log('Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 
                 const responseText = await response.text();
                 console.log('Response text:', responseText);
@@ -379,11 +387,17 @@
                     templates = data.data;
                     displayTemplates();
                 } else {
-                    showError('Failed to load templates');
+                    showError('Failed to load templates: ' + (data.detail || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Full error:', error);
-                showError('Error loading templates: ' + error.message);
+                let errorMessage = 'Error loading templates: ' + error.message;
+                
+                if (error.message.includes('fetch')) {
+                    errorMessage += '\n\n🔧 Production Issue: Check that your Render backend URL is correctly configured in js/config.js';
+                }
+                
+                showError(errorMessage);
             }
         }
 
@@ -417,7 +431,7 @@
             
             // Get template details
             try {
-                const response = await fetch('/templates/generate', {
+                const response = await fetch(API_CONFIG.getURL('/api/templates/generate'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -427,6 +441,10 @@
                         variables: {}
                     })
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 
                 const data = await response.json();
                 
@@ -487,7 +505,7 @@
             });
             
             try {
-                const response = await fetch('/templates/generate', {
+                const response = await fetch(API_CONFIG.getURL('/api/templates/generate'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -497,6 +515,10 @@
                         variables: variables
                     })
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 
                 const data = await response.json();
                 
@@ -535,7 +557,7 @@
             }
             
             try {
-                const response = await fetch('/suggestions', {
+                const response = await fetch(API_CONFIG.getURL('/suggestions'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -568,7 +590,7 @@
             }
             
             try {
-                const response = await fetch('/suggestions', {
+                const response = await fetch(API_CONFIG.getURL('/suggestions'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -748,7 +770,7 @@
             try {
                 showLoadingState('Rewriting email with AI...');
                 
-                const response = await fetch('/complete-rewrite', {
+                const response = await fetch(API_CONFIG.getURL('/complete-rewrite'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
