@@ -45,8 +45,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:8000", 
-        "https://your-netlify-app.netlify.app",  # Add your actual Netlify URL
-        "https://your-custom-domain.com"  # If you have a custom domain
+        "https://inboxqualify.netlify.app/",  # Add your actual Netlify URL
+        # "https://your-custom-domain.com"  # If you have a custom domain
     ],
     allow_credentials=True,
     allow_methods=["*"],
