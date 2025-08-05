@@ -31,8 +31,11 @@ SUPABASE_SERVICE_KEY=your_supabase_key
 # Build Command:
 pip install -r requirements.txt
 
-# Start Command:
-python main_supabase.py
+# Start Command (IMPORTANT - use main_supabase, not main):
+uvicorn main_supabase:app --host 0.0.0.0 --port 10000
+
+# Alternative Start Command:
+# python main_supabase.py
 ```
 
 ### 🔧 **STEP 3: CORS Configuration**
