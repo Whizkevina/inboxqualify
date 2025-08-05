@@ -26,9 +26,11 @@ const API_CONFIG = {
 // Make it globally available
 window.API_CONFIG = API_CONFIG;
 
-// Debug: Log the current configuration
-console.log('🔧 API Configuration:', {
-    isDevelopment: API_CONFIG.isDevelopment,
-    baseURL: API_CONFIG.getBaseURL(),
-    hostname: window.location.hostname
-});
+// Only log configuration in development mode for debugging
+if (API_CONFIG.isDevelopment) {
+    console.log('🔧 API Configuration (Development Only):', {
+        isDevelopment: API_CONFIG.isDevelopment,
+        baseURL: API_CONFIG.getBaseURL(),
+        hostname: window.location.hostname
+    });
+}

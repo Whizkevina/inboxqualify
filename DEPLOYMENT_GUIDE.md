@@ -36,6 +36,10 @@ uvicorn main_supabase:app --host 0.0.0.0 --port 10000
 
 # Alternative Start Command:
 # python main_supabase.py
+
+# ⚠️ IMPORTANT: Make sure to include the port number 10000
+# Common mistake: uvicorn main_supabase:app --host 0.0.0.0 --port (WRONG - missing port number)
+# Correct: uvicorn main_supabase:app --host 0.0.0.0 --port 10000
 ```
 
 ### 🔧 **STEP 3: CORS Configuration**
