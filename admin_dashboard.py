@@ -17,9 +17,12 @@ import hashlib
 
 load_dotenv()
 
-# Admin credentials (you should change these!)
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")  # Change this!
+# Admin credentials - these MUST be set in environment variables
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+
+if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+    raise ValueError("ADMIN_USERNAME and ADMIN_PASSWORD must be set in environment variables!")
 
 # Security
 security = HTTPBasic()
@@ -27,6 +30,9 @@ templates = Jinja2Templates(directory="admin_templates")
 
 def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
     """Verify admin credentials"""
+    if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+        raise HTTPException(status_code=500, detail="Admin credentials not configured")
+    
     correct_username = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
     correct_password = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
     if not (correct_username and correct_password):

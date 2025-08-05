@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Templates & Suggestions - InboxQualify</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .template-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .template-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .template-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        
+        .template-card.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .template-name {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+        
+        .template-preview {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .tips-count {
+            background: #3b82f6;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .variable-input {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .variable-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .variable-label {
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .suggestion-item {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+        
+        .suggestion-item.high {
+            background: #fee2e2;
+            border-left-color: #ef4444;
+        }
+        
+        .suggestion-item.medium {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+        }
+        
+        .suggestion-item.low {
+            background: #ecfdf5;
+            border-left-color: #10b981;
+        }
+        
+        .score-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        .score-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .email-preview {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .email-subject {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .email-body {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            color: #374151;
+        }
+        
+        .tips-section {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .tip-item {
+            margin: 0.5rem 0;
+            padding-left: 1rem;
+            position: relative;
+        }
+        
+        .tip-item::before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container">
+            <div class="logo">InboxQualify</div>
+            <div class="tagline">AI-Powered Email Analysis</div>
+            <nav class="header-nav">
+                <a href="/" class="nav-link">🏠 Home</a>
+                <a href="/batch-analysis.html" class="nav-link">📊 Batch Analysis</a>
+                <!-- <a href="/admin" class="nav-link">🔧 Admin</a> -->
+                <button id="dark-mode-toggle" class="nav-link theme-toggle">🌙 Dark Mode</button>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>📧 Email Templates & Suggestions</h1>
+                <p>Create professional emails with industry-specific templates and get improvement suggestions.</p>
+            </div>
+        </div>
+    </section>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Template Selection Section -->
+            <div class="template-section">
+                <h2>📋 Choose an Email Template</h2>
+                <div class="template-grid" id="templateGrid">
+                    <!-- Templates will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Variable Input Section -->
+            <div class="template-section" id="variableSection" style="display: none;">
+                <h2>✏️ Customize Your Email</h2>
+                <div class="variable-input" id="variableInputs">
+                    <!-- Variable inputs will be generated here -->
+                </div>
+                <button class="cta-button" onclick="generateEmail()">Generate Email</button>
+            </div>
+
+            <!-- Email Preview Section -->
+            <div class="template-section" id="emailPreview" style="display: none;">
+                <h2>📖 Email Preview</h2>
+                <div class="email-preview">
+                    <div class="email-subject" id="previewSubject"></div>
+                    <div class="email-body" id="previewBody"></div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button class="cta-button" onclick="analyzeEmail()">Get Suggestions</button>
+                    <button class="secondary-button" onclick="copyEmail()">Copy Email</button>
+                </div>
+            </div>
+
+            <!-- Suggestions Section -->
+            <div class="template-section" id="suggestionsSection" style="display: none;">
+                <h2>🎯 Improvement Suggestions</h2>
+                
+                <div class="score-display">
+                    <div class="score-number" id="improvementScore">0</div>
+                    <div>Improvement Score</div>
+                </div>
+                
+                <div id="suggestionsList">
+                    <!-- Suggestions will be displayed here -->
+                </div>
+                
+                <div class="tips-section" id="tipsSection">
+                    <h3>💡 Template Tips</h3>
+                    <div id="templateTips"></div>
+                </div>
+            </div>
+
+            <!-- Quick Analyzer Section -->
+            <div class="template-section">
+                <h2>🔍 Quick Email Analysis</h2>
+                <p>Already have an email? Get instant improvement suggestions:</p>
+                
+                <div class="form-group">
+                    <label for="quickSubject">Email Subject:</label>
+                    <input type="text" id="quickSubject" placeholder="Enter your email subject line">
+                </div>
+                
+                <div class="form-group">
+                    <label for="quickBody">Email Body:</label>
+                    <textarea id="quickBody" rows="8" placeholder="Enter your email content"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="cta-button" onclick="analyzeQuickEmail()">Analyze & Get Suggestions</button>
+                    <button class="secondary-button" onclick="rewriteQuickEmail()">🔄 AI Rewrite Email</button>
+                </div>
+            </div>
+
+            <!-- AI Rewriter Section -->
+            <div class="template-section" id="rewriterSection" style="display: none;">
+                <h2>🤖 AI Email Rewriter</h2>
+                <p>Let AI rewrite your email to fix all issues and make it perfect:</p>
+                
+                <div class="form-group">
+                    <label for="rewriteContext">Additional Context (Optional):</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <input type="text" id="companyName" placeholder="Company name">
+                        <input type="text" id="recipientName" placeholder="Recipient name">
+                        <input type="text" id="industry" placeholder="Industry">
+                        <input type="text" id="specificDetail" placeholder="Research detail">
+                    </div>
+                </div>
+                
+                <button class="cta-button" onclick="performRewrite()">✨ Rewrite Email</button>
+            </div>
+
+            <!-- Rewrite Results Section -->
+            <div class="template-section" id="rewriteResults" style="display: none;">
+                <h2>📊 Before vs After Comparison</h2>
+                
+                <div class="score-display">
+                    <div style="display: flex; justify-content: space-around; align-items: center;">
+                        <div>
+                            <div class="score-number" id="beforeScore">0</div>
+                            <div>Before</div>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div>
+                            <div class="score-number" id="afterScore">0</div>
+                            <div>After</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 8px;">
+                            <div class="score-number" id="improvement">+0</div>
+                            <div>Improvement</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+                    <div>
+                        <h3>📧 Original Email</h3>
+                        <div class="email-preview">
+                            <div class="email-subject" id="originalSubject"></div>
+                            <div class="email-body" id="originalBody"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>✨ AI Rewritten Email</h3>
+                        <div class="email-preview" style="border: 2px solid #10b981;">
+                            <div class="email-subject" id="rewrittenSubject"></div>
+                            <div class="email-body" id="rewrittenBody"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center;">
+                    <button class="cta-button" onclick="copyRewrittenEmail()">📋 Copy Rewritten Email</button>
+                    <button class="secondary-button" onclick="showRewriteDetails()">🔍 Show Details</button>
+                    <button class="secondary-button" onclick="rewriteAgain()">🔄 Rewrite Again</button>
+                </div>
+            </div>
+
+            <!-- Rewrite Details Section -->
+            <div class="template-section" id="rewriteDetails" style="display: none;">
+                <h2>🔧 What Was Improved</h2>
+                <div id="improvementsList">
+                    <!-- Improvement details will be shown here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Dark mode functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateToggleText(savedTheme);
+            
+            darkModeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateToggleText(newTheme);
+            });
+            
+            function updateToggleText(theme) {
+                darkModeToggle.textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+            }
+            
+            loadTemplates();
+        });
+
+        let templates = {};
+        let selectedTemplate = null;
+        let currentEmailContent = {};
+        let currentRewriteResult = null;
+
+        async function loadTemplates() {
+            try {
+                console.log('Starting to load templates...');
+                const response = await fetch('/templates');
+                console.log('Response received:', response);
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+                
+                const data = JSON.parse(responseText);
+                console.log('Parsed data:', data);
+                
+                if (data.status === 'success') {
+                    templates = data.data;
+                    displayTemplates();
+                } else {
+                    showError('Failed to load templates');
+                }
+            } catch (error) {
+                console.error('Full error:', error);
+                showError('Error loading templates: ' + error.message);
+            }
+        }
+
+        function displayTemplates() {
+            const grid = document.getElementById('templateGrid');
+            grid.innerHTML = '';
+
+            Object.entries(templates).forEach(([industry, template]) => {
+                const card = document.createElement('div');
+                card.className = 'template-card';
+                card.onclick = () => selectTemplate(industry);
+                
+                card.innerHTML = `
+                    <div class="template-name">${template.name}</div>
+                    <div class="template-preview">${template.preview}</div>
+                    <span class="tips-count">${template.tips_count} tips</span>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        async function selectTemplate(industry) {
+            selectedTemplate = industry;
+            
+            // Update visual selection
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.target.closest('.template-card').classList.add('selected');
+            
+            // Get template details
+            try {
+                const response = await fetch('/templates/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        industry: industry,
+                        variables: {}
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const templateData = data.data;
+                    currentEmailContent = templateData;
+                    showVariableInputs(templateData.variables_needed);
+                } else {
+                    showError('Failed to load template details');
+                }
+            } catch (error) {
+                showError('Error loading template: ' + error.message);
+            }
+        }
+
+        function showVariableInputs(variables) {
+            const section = document.getElementById('variableSection');
+            const container = document.getElementById('variableInputs');
+            
+            container.innerHTML = '';
+            
+            if (variables && variables.length > 0) {
+                variables.forEach(variable => {
+                    const group = document.createElement('div');
+                    group.className = 'variable-group';
+                    
+                    group.innerHTML = `
+                        <label class="variable-label">${formatVariableName(variable)}:</label>
+                        <input type="text" id="var_${variable}" placeholder="Enter ${variable}">
+                    `;
+                    
+                    container.appendChild(group);
+                });
+                
+                section.style.display = 'block';
+            } else {
+                // No variables needed, generate immediately
+                generateEmail();
+            }
+        }
+
+        function formatVariableName(variable) {
+            return variable.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        async function generateEmail() {
+            if (!selectedTemplate) {
+                showError('Please select a template first');
+                return;
+            }
+            
+            // Collect variables
+            const variables = {};
+            const inputs = document.querySelectorAll('[id^="var_"]');
+            inputs.forEach(input => {
+                const variable = input.id.replace('var_', '');
+                variables[variable] = input.value || `{${variable}}`;
+            });
+            
+            try {
+                const response = await fetch('/templates/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        industry: selectedTemplate,
+                        variables: variables
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const templateData = data.data;
+                    currentEmailContent = templateData;
+                    showEmailPreview(templateData);
+                } else {
+                    showError('Failed to generate email');
+                }
+            } catch (error) {
+                showError('Error generating email: ' + error.message);
+            }
+        }
+
+        function showEmailPreview(templateData) {
+            document.getElementById('previewSubject').textContent = templateData.subject;
+            document.getElementById('previewBody').textContent = templateData.body;
+            document.getElementById('emailPreview').style.display = 'block';
+            
+            // Show tips
+            const tipsSection = document.getElementById('templateTips');
+            tipsSection.innerHTML = '';
+            templateData.tips.forEach(tip => {
+                const tipElement = document.createElement('div');
+                tipElement.className = 'tip-item';
+                tipElement.textContent = tip;
+                tipsSection.appendChild(tipElement);
+            });
+        }
+
+        async function analyzeEmail() {
+            if (!currentEmailContent.subject || !currentEmailContent.body) {
+                showError('No email content to analyze');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/suggestions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subject: currentEmailContent.subject,
+                        body: currentEmailContent.body
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showSuggestions(data.data);
+                } else {
+                    showError('Failed to analyze email');
+                }
+            } catch (error) {
+                showError('Error analyzing email: ' + error.message);
+            }
+        }
+
+        async function analyzeQuickEmail() {
+            const subject = document.getElementById('quickSubject').value;
+            const body = document.getElementById('quickBody').value;
+            
+            if (!subject.trim() || !body.trim()) {
+                showError('Please enter both subject and body');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/suggestions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subject: subject,
+                        body: body
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    currentEmailContent = { subject, body };
+                    showSuggestions(data.data);
+                    
+                    // Show preview of analyzed email
+                    document.getElementById('previewSubject').textContent = subject;
+                    document.getElementById('previewBody').textContent = body;
+                    document.getElementById('emailPreview').style.display = 'block';
+                } else {
+                    showError('Failed to analyze email');
+                }
+            } catch (error) {
+                showError('Error analyzing email: ' + error.message);
+            }
+        }
+
+        function showSuggestions(analysisData) {
+            document.getElementById('improvementScore').textContent = analysisData.improvement_score;
+            
+            const suggestionsList = document.getElementById('suggestionsList');
+            suggestionsList.innerHTML = '';
+            
+            if (analysisData.suggestions.length === 0) {
+                suggestionsList.innerHTML = '<div class="suggestion-item low">🎉 Great job! Your email looks good with no major issues.</div>';
+            } else {
+                analysisData.suggestions.forEach(suggestion => {
+                    const item = document.createElement('div');
+                    item.className = `suggestion-item ${suggestion.priority}`;
+                    item.innerHTML = `
+                        <strong>${suggestion.priority.toUpperCase()} Priority:</strong>
+                        ${suggestion.message}
+                    `;
+                    suggestionsList.appendChild(item);
+                });
+            }
+            
+            // Add word count and subject length info
+            const statsInfo = document.createElement('div');
+            statsInfo.innerHTML = `
+                <div style="margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 6px;">
+                    <strong>Email Stats:</strong> 
+                    ${analysisData.word_count} words | 
+                    Subject length: ${analysisData.subject_length} characters
+                </div>
+            `;
+            suggestionsList.appendChild(statsInfo);
+            
+            document.getElementById('suggestionsSection').style.display = 'block';
+        }
+
+        function copyEmail() {
+            if (!currentEmailContent.subject || !currentEmailContent.body) {
+                showError('No email content to copy');
+                return;
+            }
+            
+            const emailText = `Subject: ${currentEmailContent.subject}\n\n${currentEmailContent.body}`;
+            
+            navigator.clipboard.writeText(emailText).then(() => {
+                showSuccess('Email copied to clipboard!');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = emailText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showSuccess('Email copied to clipboard!');
+            });
+        }
+
+        function showError(message) {
+            // Create or update error banner
+            let banner = document.getElementById('errorBanner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'errorBanner';
+                banner.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #fee2e2;
+                    border: 1px solid #fecaca;
+                    color: #dc2626;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    max-width: 400px;
+                `;
+                document.body.appendChild(banner);
+            }
+            
+            banner.textContent = message;
+            banner.style.display = 'block';
+            
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            // Create or update success banner
+            let banner = document.getElementById('successBanner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'successBanner';
+                banner.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #d1fae5;
+                    border: 1px solid #a7f3d0;
+                    color: #065f46;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    max-width: 400px;
+                `;
+                document.body.appendChild(banner);
+            }
+            
+            banner.textContent = message;
+            banner.style.display = 'block';
+            
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 3000);
+        }
+
+        // AI Email Rewriter Functions
+        function rewriteQuickEmail() {
+            const subject = document.getElementById('quickSubject').value;
+            const body = document.getElementById('quickBody').value;
+            
+            if (!subject.trim() || !body.trim()) {
+                showError('Please enter both subject and body to rewrite');
+                return;
+            }
+            
+            // Show rewriter section
+            document.getElementById('rewriterSection').style.display = 'block';
+            
+            // Pre-fill the current email content
+            currentEmailContent = { subject, body };
+        }
+
+        async function performRewrite() {
+            if (!currentEmailContent.subject || !currentEmailContent.body) {
+                showError('No email content to rewrite');
+                return;
+            }
+            
+            // Collect context
+            const context = {
+                company: document.getElementById('companyName').value || undefined,
+                name: document.getElementById('recipientName').value || undefined,
+                industry: document.getElementById('industry').value || undefined,
+                specific_detail: document.getElementById('specificDetail').value || undefined
+            };
+            
+            // Remove undefined values
+            Object.keys(context).forEach(key => context[key] === undefined && delete context[key]);
+            
+            try {
+                showLoadingState('Rewriting email with AI...');
+                
+                const response = await fetch('/complete-rewrite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subject: currentEmailContent.subject,
+                        body: currentEmailContent.body,
+                        context: context
+                    })
+                });
+                
+                const data = await response.json();
+                
+                hideLoadingState();
+                
+                if (data.status === 'success') {
+                    currentRewriteResult = data.data;
+                    showRewriteResults(data.data);
+                } else {
+                    showError('Failed to rewrite email');
+                }
+            } catch (error) {
+                hideLoadingState();
+                showError('Error rewriting email: ' + error.message);
+            }
+        }
+
+        function showRewriteResults(rewriteData) {
+            // Show scores
+            document.getElementById('beforeScore').textContent = rewriteData.improvement_score.before;
+            document.getElementById('afterScore').textContent = rewriteData.improvement_score.after;
+            document.getElementById('improvement').textContent = '+' + rewriteData.improvement_score.improvement;
+            
+            // Show original email
+            document.getElementById('originalSubject').textContent = rewriteData.rewrite_result.original.subject;
+            document.getElementById('originalBody').textContent = rewriteData.rewrite_result.original.body;
+            
+            // Show rewritten email
+            document.getElementById('rewrittenSubject').textContent = rewriteData.rewrite_result.rewritten.subject;
+            document.getElementById('rewrittenBody').textContent = rewriteData.rewrite_result.rewritten.body;
+            
+            // Show results section
+            document.getElementById('rewriteResults').style.display = 'block';
+            
+            showSuccess('Email rewritten successfully! Check the before/after comparison.');
+        }
+
+        function copyRewrittenEmail() {
+            if (!currentRewriteResult) {
+                showError('No rewritten email to copy');
+                return;
+            }
+            
+            const emailText = `Subject: ${currentRewriteResult.rewrite_result.rewritten.subject}\n\n${currentRewriteResult.rewrite_result.rewritten.body}`;
+            
+            navigator.clipboard.writeText(emailText).then(() => {
+                showSuccess('Rewritten email copied to clipboard!');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = emailText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showSuccess('Rewritten email copied to clipboard!');
+            });
+        }
+
+        function showRewriteDetails() {
+            if (!currentRewriteResult) {
+                showError('No rewrite data available');
+                return;
+            }
+            
+            const improvementsList = document.getElementById('improvementsList');
+            improvementsList.innerHTML = '';
+            
+            // Show improvements summary
+            const summary = document.createElement('div');
+            summary.innerHTML = `
+                <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <h3>📈 Improvement Summary</h3>
+                    <ul>
+                        <li><strong>Word Count:</strong> ${currentRewriteResult.rewrite_result.original.word_count} → ${currentRewriteResult.rewrite_result.rewritten.word_count} (${currentRewriteResult.rewrite_result.improvements.word_reduction > 0 ? '-' : '+'}${Math.abs(currentRewriteResult.rewrite_result.improvements.word_reduction)} words)</li>
+                        <li><strong>Subject Length:</strong> ${currentRewriteResult.rewrite_result.original.subject_length} → ${currentRewriteResult.rewrite_result.rewritten.subject_length} characters</li>
+                        <li><strong>Areas Improved:</strong> ${currentRewriteResult.rewrite_result.improvements.areas_improved}</li>
+                        <li><strong>Score Improvement:</strong> +${currentRewriteResult.improvement_score.improvement} points</li>
+                    </ul>
+                </div>
+            `;
+            improvementsList.appendChild(summary);
+            
+            // Show specific improvements
+            currentRewriteResult.rewrite_result.rewrite_suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item low';
+                item.innerHTML = `
+                    <strong>${suggestion.area}:</strong><br>
+                    <span style="color: #dc2626;">Issue:</span> ${suggestion.issue}<br>
+                    <span style="color: #059669;">Solution:</span> ${suggestion.suggestion}<br>
+                    <span style="color: #7c3aed;">Example:</span> ${suggestion.example}
+                `;
+                improvementsList.appendChild(item);
+            });
+            
+            document.getElementById('rewriteDetails').style.display = 'block';
+        }
+
+        function rewriteAgain() {
+            // Clear previous results and show rewriter section again
+            document.getElementById('rewriteResults').style.display = 'none';
+            document.getElementById('rewriteDetails').style.display = 'none';
+            document.getElementById('rewriterSection').style.display = 'block';
+            
+            // Clear context fields for fresh start
+            document.getElementById('companyName').value = '';
+            document.getElementById('recipientName').value = '';
+            document.getElementById('industry').value = '';
+            document.getElementById('specificDetail').value = '';
+        }
+
+        function showLoadingState(message) {
+            // Create or show loading overlay
+            let overlay = document.getElementById('loadingOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'loadingOverlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.7);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 2000;
+                    color: white;
+                    font-size: 1.2rem;
+                `;
+                document.body.appendChild(overlay);
+            }
+            
+            overlay.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🤖</div>
+                    <div>${message}</div>
+                    <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">This may take a few seconds...</div>
+                </div>
+            `;
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoadingState() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

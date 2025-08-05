@@ -12,6 +12,17 @@ config.json
 secrets.json
 credentials.json
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+analytics.db
+API/analytics.db
+
+# Log files
+*.log
+server.log
+
 # Python
 __pycache__/
 *.py[cod]

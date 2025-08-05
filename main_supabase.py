@@ -7,9 +7,10 @@ import json
 import time
 from datetime import datetime
 from typing import Optional
-from fastapi import FastAPI, HTTPException, Request, Depends, status
+from fastapi import FastAPI, HTTPException, Request, Depends, status, UploadFile, File
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -28,11 +29,11 @@ load_dotenv()
 try:
     from supabase_db import get_db
     db = get_db()
-    print("✅ Supabase PostgreSQL database connected successfully!")
+    print("SUCCESS: Supabase PostgreSQL database connected successfully!")
     DB_TYPE = "supabase"
 except Exception as e:
-    print(f"⚠️ Supabase connection failed: {e}")
-    print("🔄 Using SQLite fallback database")
+    print(f"WARNING: Supabase connection failed: {e}")
+    print("INFO: Using SQLite fallback database")
     from admin_dashboard import AnalyticsDB
     db = AnalyticsDB()
     DB_TYPE = "sqlite"
@@ -41,20 +42,20 @@ except Exception as e:
 try:
     from email_alerts import EmailAlertSystem
     email_alerts = EmailAlertSystem(db)
-    print("✅ Email alert system initialized")
+    print("SUCCESS: Email alert system initialized")
 except Exception as e:
-    print(f"⚠️ Email alerts initialization failed: {e}")
+    print(f"WARNING: Email alerts initialization failed: {e}")
     email_alerts = None
 
 # --- API KEY CONFIGURATION ---
 try:
     hf_api_key = os.getenv("HUGGINGFACE_API_KEY")
     if hf_api_key:
-        print("✅ Hugging Face API key loaded successfully!")
+        print("SUCCESS: Hugging Face API key loaded successfully!")
     else:
-        print("⚠️ HUGGINGFACE_API_KEY not set. Will use local analyzer only.")
+        print("WARNING: HUGGINGFACE_API_KEY not set. Will use local analyzer only.")
 except Exception as e:
-    print(f"❌ Error loading API keys: {e}")
+    print(f"ERROR: Error loading API keys: {e}")
     hf_api_key = None
 
 # --- App Setup & CORS ---
@@ -70,6 +71,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files
+app.mount("/css", StaticFiles(directory="css"), name="css")
+app.mount("/js", StaticFiles(directory="js"), name="js")
+
+# Favicon endpoint
+@app.get("/favicon.ico")
+async def favicon():
+    """Serve favicon"""
+    try:
+        return FileResponse("favicon.svg", media_type="image/svg+xml")
+    except:
+        # Return a simple response if favicon.svg doesn't exist
+        return Response(content="", media_type="image/x-icon")
 
 # HTTP Basic Auth for admin endpoints
 security = HTTPBasic()
@@ -124,7 +139,7 @@ async def analyze_with_ai(subject: str, body: str, request: Request) -> Analysis
     # Try Hugging Face first
     if hf_api_key:
         try:
-            print("🤖 Using Hugging Face AI for analysis...")
+            print("INFO: Using Hugging Face AI for analysis...")
             ai_model = "huggingface"
             hf_analyzer = HuggingFaceAnalyzer(hf_api_key)
             result_data = hf_analyzer.analyze_email_with_ai(subject, body)
@@ -135,7 +150,7 @@ async def analyze_with_ai(subject: str, body: str, request: Request) -> Analysis
             if DB_TYPE == "supabase":
                 try:
                     classification = {
-                        "breakdown": [cat.dict() for cat in AnalysisResult(**result_data).breakdown],
+                        "breakdown": [cat.model_dump() for cat in AnalysisResult(**result_data).breakdown],
                         "verdict": result_data["verdict"]
                     }
                     
@@ -151,17 +166,17 @@ async def analyze_with_ai(subject: str, body: str, request: Request) -> Analysis
                         classification=classification
                     )
                 except Exception as log_error:
-                    print(f"⚠️ Logging failed: {log_error}")
+                    print(f"WARNING: Logging failed: {log_error}")
             
             return AnalysisResult(**result_data)
             
         except Exception as e:
             error_message = str(e)
-            print(f"❌ Hugging Face analysis failed: {e}")
-            print("🔄 Falling back to local analyzer...")
+            print(f"ERROR: Hugging Face analysis failed: {e}")
+            print("INFO: Falling back to local analyzer...")
     
     # Fallback to local analyzer
-    print("🏠 Using local rule-based analyzer...")
+    print("INFO: Using local rule-based analyzer...")
     ai_model = "local"
     local_analyzer = LocalEmailAnalyzer()
     result_data = local_analyzer.analyze_email(subject, body)
@@ -189,7 +204,7 @@ async def analyze_with_ai(subject: str, body: str, request: Request) -> Analysis
                 classification=classification
             )
         except Exception as log_error:
-            print(f"⚠️ Logging failed: {log_error}")
+            print(f"WARNING: Logging failed: {log_error}")
     
     return AnalysisResult(**result_data)
 
@@ -200,7 +215,17 @@ async def qualify_email(email_input: EmailInput, request: Request):
     return await analyze_with_ai(email_input.subject, email_input.email_body, request)
 
 @app.get("/")
-def read_root():
+async def read_root():
+    """Serve the main application page"""
+    try:
+        with open("index.html", "r", encoding="utf-8") as file:
+            html_content = file.read()
+        return HTMLResponse(content=html_content)
+    except FileNotFoundError:
+        return HTMLResponse("<h1>InboxQualify</h1><p>Main page not found</p>", status_code=404)
+
+@app.get("/health")
+def health_check():
     """API health check"""
     return {
         "status": "InboxQualify API is running!", 
@@ -212,6 +237,34 @@ def read_root():
             "huggingface_ai": hf_api_key is not None
         }
     }
+
+@app.get("/app", response_class=HTMLResponse)
+async def serve_app():
+    """Serve the main application page"""
+    with open("index.html", "r", encoding="utf-8") as file:
+        html_content = file.read()
+    return HTMLResponse(content=html_content)
+
+@app.get("/templates.html", response_class=HTMLResponse)
+async def serve_templates():
+    """Serve the email templates page"""
+    with open("templates.html", "r", encoding="utf-8") as file:
+        html_content = file.read()
+    return HTMLResponse(content=html_content)
+
+@app.get("/test-templates.html", response_class=HTMLResponse)
+async def serve_test_templates():
+    """Serve the test templates page"""
+    with open("test-templates.html", "r", encoding="utf-8") as file:
+        html_content = file.read()
+    return HTMLResponse(content=html_content)
+
+@app.get("/batch-analysis.html", response_class=HTMLResponse)
+async def serve_batch_analysis():
+    """Serve the batch analysis page"""
+    with open("batch-analysis.html", "r", encoding="utf-8") as file:
+        html_content = file.read()
+    return HTMLResponse(content=html_content)
 
 # --- Admin Dashboard Endpoints ---
 @app.get("/admin", response_class=HTMLResponse)
@@ -547,6 +600,399 @@ async def create_test_data(admin_user = Depends(get_current_admin)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Test data creation error: {str(e)}")
 
+# --- EMAIL TEMPLATES & SUGGESTIONS ENDPOINTS ---
+
+# Import template classes
+from enhanced_features import EmailTemplateGenerator, EmailSuggestionEngine, EmailRewriter, BatchAnalyzer, CampaignTracker
+
+# Initialize template and suggestion engines
+template_generator = EmailTemplateGenerator()
+suggestion_engine = EmailSuggestionEngine()
+email_rewriter = EmailRewriter()
+batch_analyzer = BatchAnalyzer(suggestion_engine, email_rewriter)
+campaign_tracker = CampaignTracker()
+
+class TemplateRequest(BaseModel):
+    industry: str
+    variables: Optional[dict] = None
+
+class SuggestionRequest(BaseModel):
+    subject: str
+    body: str
+
+class RewriteRequest(BaseModel):
+    subject: str
+    body: str
+    context: Optional[dict] = None
+
+class BatchAnalysisRequest(BaseModel):
+    csv_content: str
+    include_rewrite: bool = False
+    campaign_name: Optional[str] = None
+    campaign_description: Optional[str] = None
+
+@app.get("/templates")
+async def get_all_templates():
+    """Get all available email templates"""
+    try:
+        templates = template_generator.get_all_templates()
+        return {
+            "data": templates,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Retrieved {len(templates)} email templates"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve templates: {str(e)}")
+
+@app.post("/templates/generate")
+async def generate_template(request: TemplateRequest):
+    """Generate an email template for a specific industry"""
+    try:
+        template_data = template_generator.generate_template(
+            industry=request.industry,
+            variables=request.variables or {}
+        )
+        
+        return {
+            "data": template_data,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Generated {request.industry} template successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate template: {str(e)}")
+
+@app.post("/suggestions")
+async def get_email_suggestions(request: SuggestionRequest):
+    """Analyze email and provide improvement suggestions"""
+    try:
+        analysis = suggestion_engine.analyze_email(request.subject, request.body)
+        
+        return {
+            "data": analysis,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Generated {len(analysis['suggestions'])} improvement suggestions"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to analyze email: {str(e)}")
+
+@app.post("/qualify-with-suggestions", response_model=dict)
+async def qualify_email_with_suggestions(email_input: EmailInput, request: Request):
+    """Analyze email and provide both quality score and improvement suggestions"""
+    try:
+        # Get original analysis
+        analysis_result = await analyze_with_ai(email_input.subject, email_input.email_body, request)
+        
+        # Get improvement suggestions
+        suggestions = suggestion_engine.analyze_email(email_input.subject, email_input.email_body)
+        
+        # Combine results
+        enhanced_result = {
+            "analysis": analysis_result.model_dump(),
+            "suggestions": suggestions,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": "Email analyzed with suggestions"
+        }
+        
+        return enhanced_result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis with suggestions failed: {str(e)}")
+
+@app.post("/rewrite-email")
+async def rewrite_email(request: RewriteRequest):
+    """Rewrite email based on improvement analysis"""
+    try:
+        # First, analyze the email for suggestions
+        suggestions = suggestion_engine.analyze_email(request.subject, request.body)
+        
+        # Then perform the rewrite
+        rewrite_result = email_rewriter.full_rewrite(
+            request.subject, 
+            request.body, 
+            suggestions["suggestions"], 
+            request.context or {}
+        )
+        
+        return {
+            "data": rewrite_result,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Email rewritten with {rewrite_result['improvements']['areas_improved']} improvements"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Email rewrite failed: {str(e)}")
+
+@app.post("/rewrite-suggestions")
+async def get_rewrite_suggestions(request: SuggestionRequest):
+    """Get specific rewrite suggestions for each problem area"""
+    try:
+        # Analyze the email
+        analysis = suggestion_engine.analyze_email(request.subject, request.body)
+        
+        # Generate rewrite suggestions
+        rewrite_suggestions = email_rewriter.generate_rewrite_suggestions(
+            request.subject, 
+            request.body, 
+            analysis["suggestions"]
+        )
+        
+        return {
+            "data": {
+                "original_analysis": analysis,
+                "rewrite_suggestions": rewrite_suggestions
+            },
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Generated {len(rewrite_suggestions)} rewrite suggestions"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate rewrite suggestions: {str(e)}")
+
+@app.post("/complete-rewrite")
+async def complete_email_rewrite(request: RewriteRequest, user_request: Request):
+    """Complete email analysis, suggestions, and rewrite in one call"""
+    try:
+        # 1. Get original analysis
+        original_analysis = await analyze_with_ai(request.subject, request.body, user_request)
+        
+        # 2. Get improvement suggestions
+        suggestions = suggestion_engine.analyze_email(request.subject, request.body)
+        
+        # 3. Perform rewrite
+        rewrite_result = email_rewriter.full_rewrite(
+            request.subject, 
+            request.body, 
+            suggestions["suggestions"], 
+            request.context or {}
+        )
+        
+        # 4. Analyze rewritten email for comparison
+        try:
+            rewritten_analysis = await analyze_with_ai(
+                rewrite_result["rewritten"]["subject"], 
+                rewrite_result["rewritten"]["body"], 
+                user_request
+            )
+        except:
+            # If rewritten analysis fails, estimate improvement
+            rewritten_analysis = {
+                "overallScore": rewrite_result["estimated_improvement"],
+                "verdict": "Professional"
+            }
+        
+        # 5. Combine all results
+        complete_result = {
+            "original_analysis": original_analysis.model_dump() if hasattr(original_analysis, 'model_dump') else original_analysis,
+            "improvement_suggestions": suggestions,
+            "rewrite_result": rewrite_result,
+            "rewritten_analysis": rewritten_analysis.model_dump() if hasattr(rewritten_analysis, 'model_dump') else rewritten_analysis,
+            "improvement_score": {
+                "before": original_analysis.overallScore if hasattr(original_analysis, 'overallScore') else 0,
+                "after": rewritten_analysis.get("overallScore") if isinstance(rewritten_analysis, dict) else (rewritten_analysis.overallScore if hasattr(rewritten_analysis, 'overallScore') else rewrite_result["estimated_improvement"]),
+                "improvement": (
+                    (rewritten_analysis.get("overallScore") if isinstance(rewritten_analysis, dict) else (getattr(rewritten_analysis, 'overallScore', None) if hasattr(rewritten_analysis, 'overallScore') else rewrite_result["estimated_improvement"])) or 0
+                ) - (
+                    (getattr(original_analysis, 'overallScore', None) if hasattr(original_analysis, 'overallScore') else 0) or 0
+                )
+            }
+        }
+        
+        return {
+            "data": complete_result,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": "Complete email rewrite analysis completed"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Complete rewrite failed: {str(e)}")
+
+# --- BATCH ANALYSIS ENDPOINTS ---
+
+@app.post("/batch/upload-csv")
+async def upload_csv_batch(file: UploadFile = File(...)):
+    """Upload CSV file for batch analysis"""
+    try:
+        # Validate file type
+        if not file.filename or not file.filename.endswith('.csv'):
+            raise HTTPException(status_code=400, detail="File must be a CSV")
+        
+        # Read CSV content
+        content = await file.read()
+        csv_content = content.decode('utf-8')
+        
+        # Parse and validate CSV
+        emails = batch_analyzer.parse_csv_content(csv_content)
+        
+        if not emails:
+            raise HTTPException(status_code=400, detail="No valid email data found in CSV")
+        
+        return {
+            "data": {
+                "filename": file.filename,
+                "email_count": len(emails),
+                "preview": emails[:3],  # First 3 emails as preview
+                "csv_content": csv_content  # Store for analysis
+            },
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"CSV uploaded successfully with {len(emails)} emails"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"CSV upload failed: {str(e)}")
+
+@app.post("/batch/analyze")
+async def analyze_batch_emails(request: BatchAnalysisRequest):
+    """Analyze a batch of emails from CSV content"""
+    try:
+        # Parse emails from CSV
+        emails = batch_analyzer.parse_csv_content(request.csv_content)
+        
+        if not emails:
+            raise HTTPException(status_code=400, detail="No valid emails to analyze")
+        
+        # Perform batch analysis
+        batch_result = batch_analyzer.analyze_batch(emails, request.include_rewrite)
+        
+        # Create campaign if specified
+        if request.campaign_name:
+            campaign_id = campaign_tracker.create_campaign(
+                request.campaign_name, 
+                request.campaign_description or ""
+            )
+            campaign_tracker.add_batch_to_campaign(campaign_id, batch_result)
+            batch_result['campaign_id'] = campaign_id
+        
+        return {
+            "data": batch_result,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Analyzed {batch_result['summary']['processed_emails']} emails successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Batch analysis failed: {str(e)}")
+
+@app.get("/batch/result/{batch_id}")
+async def get_batch_result(batch_id: str):
+    """Get batch analysis result by ID"""
+    try:
+        result = batch_analyzer.get_batch_result(batch_id)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Batch result not found")
+        
+        return {
+            "data": result,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": "Batch result retrieved successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve batch result: {str(e)}")
+
+@app.get("/batch/export/{batch_id}")
+async def export_batch_csv(batch_id: str):
+    """Export batch analysis results as CSV"""
+    try:
+        result = batch_analyzer.get_batch_result(batch_id)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Batch result not found")
+        
+        csv_content = batch_analyzer.generate_csv_report(result)
+        
+        # Create streaming response
+        def iter_csv():
+            yield csv_content
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"email_analysis_batch_{batch_id[:8]}_{timestamp}.csv"
+        
+        return StreamingResponse(
+            iter_csv(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"CSV export failed: {str(e)}")
+
+# --- CAMPAIGN TRACKING ENDPOINTS ---
+
+@app.post("/campaigns/create")
+async def create_campaign(name: str, description: str = ""):
+    """Create a new email campaign"""
+    try:
+        campaign_id = campaign_tracker.create_campaign(name, description)
+        
+        return {
+            "data": {
+                "campaign_id": campaign_id,
+                "name": name,
+                "description": description
+            },
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Campaign '{name}' created successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Campaign creation failed: {str(e)}")
+
+@app.get("/campaigns/{campaign_id}")
+async def get_campaign_stats(campaign_id: str):
+    """Get campaign statistics and trends"""
+    try:
+        stats = campaign_tracker.get_campaign_stats(campaign_id)
+        
+        if not stats:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        
+        return {
+            "data": stats,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": "Campaign statistics retrieved successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve campaign stats: {str(e)}")
+
+@app.get("/campaigns")
+async def list_campaigns():
+    """List all campaigns"""
+    try:
+        campaigns = [
+            {
+                "id": campaign_id,
+                "name": campaign_data["name"],
+                "total_emails": campaign_data["total_emails"],
+                "average_score": campaign_data["average_score"],
+                "batch_count": len(campaign_data["batches"]),
+                "created_at": campaign_data["created_at"]
+            }
+            for campaign_id, campaign_data in campaign_tracker.campaigns.items()
+        ]
+        
+        return {
+            "data": campaigns,
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Retrieved {len(campaigns)} campaigns"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list campaigns: {str(e)}")
+
 # Serve static files
 @app.get("/css/{file_path}")
 async def serve_css(file_path: str):
@@ -566,5 +1012,5 @@ async def serve_js(file_path: str):
 
 if __name__ == "__main__":
     import uvicorn
-    print(f"🚀 Starting InboxQualify API v2.0.0 with {DB_TYPE} database...")
+    print(f"INFO: Starting InboxQualify API v2.0.0 with {DB_TYPE} database...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

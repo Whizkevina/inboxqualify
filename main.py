@@ -134,7 +134,7 @@ async def analyze_with_ai(subject: str, body: str, request: Request) -> Analysis
             
             # Extract additional classification data
             classification = {
-                "breakdown": [cat.dict() for cat in AnalysisResult(**result_data).breakdown],
+                "breakdown": [cat.model_dump() for cat in AnalysisResult(**result_data).breakdown],
                 "verdict": result_data["verdict"]
             }
             

@@ -16,6 +16,12 @@
         <div class="container">
             <div class="logo">InboxQualify</div>
             <div class="tagline">AI-Powered Email Analysis</div>
+            <nav class="header-nav">
+                <a href="/templates.html" class="nav-link">📧 Email Templates</a>
+                <a href="/batch-analysis.html" class="nav-link">📊 Batch Analysis</a>
+                <!-- <a href="/admin" class="nav-link">🔧 Admin</a> -->
+                <button id="dark-mode-toggle" class="nav-link theme-toggle">🌙 Dark Mode</button>
+            </nav>
         </div>
     </header>
 
@@ -34,19 +40,51 @@
                 <div class="two-column">
                     <section class="input-section">
                         <h2>Analyze Your Email</h2>
+                        
+                        <!-- Quick Templates Section -->
+                        <div class="quick-templates">
+                            <h3>📧 Quick Templates</h3>
+                            <div class="template-buttons">
+                                <button type="button" class="template-btn" data-template="cold-outreach">Cold Outreach</button>
+                                <button type="button" class="template-btn" data-template="follow-up">Follow Up</button>
+                                <button type="button" class="template-btn" data-template="introduction">Introduction</button>
+                                <button type="button" class="template-btn" data-template="partnership">Partnership</button>
+                            </div>
+                        </div>
+                        
                         <form id="email-form">
                             <div class="form-group">
                                 <label for="subject">Subject Line</label>
                                 <input type="text" id="subject" name="subject" placeholder="Enter your email subject line..." required>
+                                <div class="character-counter">
+                                    <span id="subject-counter">0</span> characters 
+                                    <span class="optimal-range">(optimal: 30-50)</span>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="email-body">Email Body</label>
                                 <textarea id="email-body" name="email-body" placeholder="Paste your email content here..." required></textarea>
+                                <div class="character-counter">
+                                    <span id="body-counter">0</span> characters 
+                                    <span class="optimal-range">(optimal: 50-200 words)</span>
+                                </div>
                             </div>
                             <button type="submit" class="cta-button">
                                 <span class="button-text">Analyze Email</span>
                             </button>
                         </form>
+                        
+                        <!-- Email Preview Section -->
+                        <div class="email-preview" id="email-preview">
+                            <h3>📋 Email Preview</h3>
+                            <div class="preview-container">
+                                <div class="preview-subject">
+                                    <strong>Subject:</strong> <span id="preview-subject-text"></span>
+                                </div>
+                                <div class="preview-body" id="preview-body-text"></div>
+                            </div>
+                            <button type="button" id="toggle-preview" class="secondary-button">👁️ Toggle Preview</button>
+                        </div>
                     </section>
 
                     <section class="output-section">
@@ -54,6 +92,15 @@
                             <div class="placeholder">
                                 <h3>Your AI Analysis</h3>
                                 <p>Enter your email content and click "Analyze Email" to get detailed scoring and actionable feedback.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Export Section -->
+                        <div class="export-section" id="export-section">
+                            <div class="export-buttons">
+                                <button type="button" id="export-pdf" class="secondary-button">📄 Export as PDF</button>
+                                <button type="button" id="export-html" class="secondary-button">🌐 Export as HTML</button>
+                                <button type="button" id="copy-results" class="secondary-button">📋 Copy Results</button>
                             </div>
                         </div>
                     </section>

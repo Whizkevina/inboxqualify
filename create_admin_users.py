@@ -19,16 +19,20 @@ def create_admin_users():
         print("✅ Connected to Supabase database")
         
         # Create primary admin user (from environment)
-        admin_username = os.getenv("ADMIN_USERNAME", "timmie").strip("'\"")
-        admin_password = os.getenv("ADMIN_PASSWORD", "qualify321").strip("'\"")
-        admin_email = os.getenv("ADMIN_EMAIL", "timmyondbeat@gmail.com")
+        admin_username = os.getenv("ADMIN_USERNAME")
+        admin_password = os.getenv("ADMIN_PASSWORD")
+        admin_email = os.getenv("ADMIN_EMAIL")
+        
+        if not admin_username or not admin_password:
+            print("❌ Error: ADMIN_USERNAME and ADMIN_PASSWORD must be set in environment variables!")
+            return False
         
         print(f"\n🔧 Creating primary admin user: {admin_username}")
         
         success = db.create_admin_user(
             username=admin_username,
             password=admin_password,
-            email=admin_email,
+            email=admin_email or "admin@inboxqualify.com",
             role="admin"
         )
         
@@ -36,36 +40,9 @@ def create_admin_users():
             print(f"✅ Admin user '{admin_username}' created successfully!")
         else:
             print(f"⚠️ Admin user '{admin_username}' may already exist or creation failed")
-        
-        # Create additional admin users
-        additional_users = [
-            {
-                "username": "admin",
-                "password": "admin123",
-                "email": "admin@inboxqualify.com",
-                "role": "admin"
-            },
-            {
-                "username": "viewer",
-                "password": "viewer123", 
-                "email": "viewer@inboxqualify.com",
-                "role": "viewer"
-            }
-        ]
-        
-        print("\n🔧 Creating additional admin users...")
-        for user in additional_users:
-            success = db.create_admin_user(
-                username=user["username"],
-                password=user["password"],
-                email=user["email"],
-                role=user["role"]
-            )
             
-            if success:
-                print(f"✅ {user['role'].title()} user '{user['username']}' created successfully!")
-            else:
-                print(f"⚠️ User '{user['username']}' may already exist or creation failed")
+        # NOTE: Additional default admin users removed for security
+        # Add any additional users through the admin interface or environment variables
         
         # List all admin users
         print("\n📋 Current admin users in database:")
@@ -79,29 +56,20 @@ def create_admin_users():
         else:
             print("  No admin users found")
         
-        # Test authentication
+        # Test authentication only with environment user
         print("\n🧪 Testing authentication...")
         
-        test_users = [
-            (admin_username, admin_password),
-            ("admin", "admin123"),
-            ("viewer", "viewer123")
-        ]
-        
-        for username, password in test_users:
-            user = db.verify_admin_user(username, password)
-            if user:
-                print(f"✅ Authentication successful for '{username}' (role: {user.get('role', 'unknown')})")
+        if admin_username and admin_password:
+            test_user = db.verify_admin_user(admin_username, admin_password)
+            if test_user:
+                print(f"✅ Authentication successful for '{admin_username}' (role: {test_user.get('role', 'unknown')})")
             else:
-                print(f"❌ Authentication failed for '{username}'")
+                print(f"❌ Authentication failed for '{admin_username}'")
         
         print("\n" + "=" * 40)
         print("🎉 Admin users setup complete!")
-        print("\n📝 Login credentials:")
-        print(f"  Primary Admin: {admin_username} / {admin_password}")
-        print("  Secondary Admin: admin / admin123")
-        print("  Viewer User: viewer / viewer123")
-        print("\n🔗 Access dashboard: http://localhost:8000/admin")
+        print("\n📝 NOTE: Admin credentials are configured via environment variables")
+        print("🔗 Access dashboard: http://localhost:8000/admin")
         
     except Exception as e:
         print(f"❌ Error setting up admin users: {e}")

@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Analysis - InboxQualify</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .batch-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+        
+        .upload-text {
+            color: #6b7280;
+            margin-bottom: 1rem;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .batch-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .results-table th {
+            background: #f8fafc;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .results-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .results-table tr:hover {
+            background: #f8fafc;
+        }
+        
+        .score-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        
+        .score-excellent {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .score-good {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .score-fair {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .score-poor {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .issue-count {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+        
+        .campaign-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .distribution-chart {
+            display: flex;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .distribution-segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .segment-excellent { background: #10b981; }
+        .segment-good { background: #3b82f6; }
+        .segment-fair { background: #f59e0b; }
+        .segment-poor { background: #ef4444; }
+        
+        .legend {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .processing-animation {
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toggle-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #cbd5e1;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle.active {
+            background: #3b82f6;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .toggle.active .toggle-slider {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container">
+            <div class="logo">InboxQualify</div>
+            <div class="tagline">AI-Powered Email Analysis</div>
+            <nav class="header-nav">
+                <a href="/" class="nav-link">🏠 Home</a>
+                <a href="/templates.html" class="nav-link">📧 Email Templates</a>
+                <!-- <a href="/admin" class="nav-link">🔧 Admin</a> -->
+                <button id="dark-mode-toggle" class="nav-link theme-toggle">🌙 Dark Mode</button>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>📊 Batch Email Analysis</h1>
+                <p>Upload CSV files to analyze multiple emails at once and track campaign performance.</p>
+            </div>
+        </div>
+    </section>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- File Upload Section -->
+            <div class="batch-section">
+                <h2>📁 Upload Email CSV</h2>
+                <p>Upload a CSV file containing your emails. Required columns: <strong>subject</strong>, <strong>body</strong>. Optional: sender_name, sender_email, company, industry</p>
+                
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFile').click()">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">
+                        <strong>Click to upload</strong> or drag and drop your CSV file here
+                    </div>
+                    <div style="color: #9ca3af; font-size: 0.9rem;">
+                        Maximum file size: 10MB
+                    </div>
+                </div>
+                
+                <input type="file" id="csvFile" class="file-input" accept=".csv" onchange="handleFileUpload(event)">
+                
+                <div id="filePreview" style="display: none;">
+                    <h3>📋 File Preview</h3>
+                    <div id="previewContent"></div>
+                    
+                    <!-- Campaign Options -->
+                    <div class="campaign-section">
+                        <h4>📈 Campaign Tracking (Optional)</h4>
+                        <div class="form-group">
+                            <label for="campaignName">Campaign Name:</label>
+                            <input type="text" id="campaignName" placeholder="e.g., Q1 Outreach Campaign">
+                        </div>
+                        <div class="form-group">
+                            <label for="campaignDescription">Description:</label>
+                            <textarea id="campaignDescription" rows="2" placeholder="Campaign description..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Options -->
+                    <div class="toggle-section">
+                        <div class="toggle" id="rewriteToggle" onclick="toggleRewrite()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                        <label>Include AI email rewrites (takes longer but provides improved versions)</label>
+                    </div>
+                    
+                    <button class="cta-button" onclick="startBatchAnalysis()" id="analyzeButton">
+                        🚀 Analyze Emails
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="batch-section" id="progressSection" style="display: none;">
+                <h2>⏳ Processing Your Emails</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="progressText">Analyzing emails...</div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="batch-section" id="resultsSection" style="display: none;">
+                <h2>📊 Analysis Results</h2>
+                
+                <!-- Summary Stats -->
+                <div class="batch-stats" id="summaryStats">
+                    <!-- Stats will be populated here -->
+                </div>
+                
+                <!-- Score Distribution Chart -->
+                <div class="chart-container">
+                    <h3>Score Distribution</h3>
+                    <div class="distribution-chart" id="distributionChart">
+                        <!-- Chart will be populated here -->
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color segment-excellent"></div>
+                            <span>Excellent (80-100)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color segment-good"></div>
+                            <span>Good (60-79)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color segment-fair"></div>
+                            <span>Fair (40-59)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color segment-poor"></div>
+                            <span>Poor (0-39)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Common Issues -->
+                <div class="chart-container" id="commonIssuesChart">
+                    <h3>Most Common Issues</h3>
+                    <div id="issuesList"></div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; margin: 1.5rem 0; justify-content: center;">
+                    <button class="cta-button" onclick="exportResults()" id="exportButton">
+                        💾 Export CSV Report
+                    </button>
+                    <button class="secondary-button" onclick="showDetailedResults()">
+                        🔍 View Detailed Results
+                    </button>
+                    <button class="secondary-button" onclick="resetAnalysis()">
+                        🔄 Analyze New File
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detailed Results Section -->
+            <div class="batch-section" id="detailedResultsSection" style="display: none;">
+                <h2>📋 Detailed Email Analysis</h2>
+                <table class="results-table" id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Subject</th>
+                            <th>Score</th>
+                            <th>Issues</th>
+                            <th>Words</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                        <!-- Results will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Campaign Results Section -->
+            <div class="batch-section" id="campaignSection" style="display: none;">
+                <h2>📈 Campaign Performance</h2>
+                <div id="campaignStats">
+                    <!-- Campaign statistics will be shown here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="processing-animation">
+            <div class="spinner"></div>
+            <div id="loadingText">Processing your emails...</div>
+            <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">This may take a few moments</div>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateToggleText(savedTheme);
+            
+            darkModeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateToggleText(newTheme);
+            });
+            
+            function updateToggleText(theme) {
+                darkModeToggle.textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+            }
+        });
+
+        let currentBatchResult = null;
+        let includeRewrite = false;
+        let uploadedCsvContent = null;
+
+        // File upload handling
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.csv')) {
+                showError('Please select a CSV file');
+                return;
+            }
+            
+            showLoading('Reading CSV file...');
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const csvContent = e.target.result;
+                    await uploadCsvFile(file, csvContent);
+                } catch (error) {
+                    hideLoading();
+                    showError('Error reading file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function uploadCsvFile(file, csvContent) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch('/batch/upload-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                hideLoading();
+                
+                if (data.status === 'success') {
+                    uploadedCsvContent = data.data.csv_content;
+                    showFilePreview(data.data);
+                } else {
+                    showError('Upload failed: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                hideLoading();
+                showError('Upload error: ' + error.message);
+            }
+        }
+
+        function showFilePreview(fileData) {
+            document.getElementById('filePreview').style.display = 'block';
+            
+            const previewContent = document.getElementById('previewContent');
+            previewContent.innerHTML = `
+                <div style="background: #f0f9ff; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+                    <strong>📄 ${fileData.filename}</strong><br>
+                    Found ${fileData.email_count} emails to analyze
+                </div>
+                
+                <div style="margin: 1rem 0;">
+                    <strong>Preview (first 3 emails):</strong>
+                    <div style="background: #f9fafb; padding: 1rem; border-radius: 6px; margin-top: 0.5rem; max-height: 200px; overflow-y: auto;">
+                        ${fileData.preview.map((email, index) => `
+                            <div style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb;">
+                                <strong>Email ${index + 1}:</strong> ${email.subject || 'No subject'}<br>
+                                <span style="color: #6b7280; font-size: 0.9rem;">${(email.body || 'No body').substring(0, 100)}...</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleRewrite() {
+            const toggle = document.getElementById('rewriteToggle');
+            includeRewrite = !includeRewrite;
+            
+            if (includeRewrite) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+
+        async function startBatchAnalysis() {
+            if (!uploadedCsvContent) {
+                showError('Please upload a CSV file first');
+                return;
+            }
+            
+            const campaignName = document.getElementById('campaignName').value.trim();
+            const campaignDescription = document.getElementById('campaignDescription').value.trim();
+            
+            // Show progress
+            document.getElementById('progressSection').style.display = 'block';
+            showLoading('Analyzing emails...');
+            
+            try {
+                const response = await fetch('/batch/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        csv_content: uploadedCsvContent,
+                        include_rewrite: includeRewrite,
+                        campaign_name: campaignName || null,
+                        campaign_description: campaignDescription || null
+                    })
+                });
+                
+                const data = await response.json();
+                hideLoading();
+                
+                if (data.status === 'success') {
+                    currentBatchResult = data.data;
+                    showResults(data.data);
+                    
+                    // Show campaign section if campaign was created
+                    if (data.data.campaign_id) {
+                        showCampaignResults(data.data.campaign_id);
+                    }
+                } else {
+                    showError('Analysis failed: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                hideLoading();
+                showError('Analysis error: ' + error.message);
+            }
+        }
+
+        function showResults(batchResult) {
+            const summary = batchResult.summary;
+            
+            // Show summary stats
+            const statsContainer = document.getElementById('summaryStats');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${summary.processed_emails}</div>
+                    <div class="stat-label">Emails Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${summary.average_score}</div>
+                    <div class="stat-label">Average Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${summary.processing_time.toFixed(1)}s</div>
+                    <div class="stat-label">Processing Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${Object.keys(summary.common_issues).length}</div>
+                    <div class="stat-label">Issue Types Found</div>
+                </div>
+            `;
+            
+            // Show score distribution
+            showScoreDistribution(summary.score_distribution);
+            
+            // Show common issues
+            showCommonIssues(summary.common_issues);
+            
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('progressSection').style.display = 'none';
+        }
+
+        function showScoreDistribution(distribution) {
+            const total = distribution.excellent + distribution.good + distribution.fair + distribution.poor;
+            
+            if (total === 0) return;
+            
+            const excellentPercent = (distribution.excellent / total * 100);
+            const goodPercent = (distribution.good / total * 100);
+            const fairPercent = (distribution.fair / total * 100);
+            const poorPercent = (distribution.poor / total * 100);
+            
+            const chart = document.getElementById('distributionChart');
+            chart.innerHTML = `
+                ${excellentPercent > 0 ? `<div class="distribution-segment segment-excellent" style="width: ${excellentPercent}%">${distribution.excellent > 0 ? distribution.excellent : ''}</div>` : ''}
+                ${goodPercent > 0 ? `<div class="distribution-segment segment-good" style="width: ${goodPercent}%">${distribution.good > 0 ? distribution.good : ''}</div>` : ''}
+                ${fairPercent > 0 ? `<div class="distribution-segment segment-fair" style="width: ${fairPercent}%">${distribution.fair > 0 ? distribution.fair : ''}</div>` : ''}
+                ${poorPercent > 0 ? `<div class="distribution-segment segment-poor" style="width: ${poorPercent}%">${distribution.poor > 0 ? distribution.poor : ''}</div>` : ''}
+            `;
+        }
+
+        function showCommonIssues(issues) {
+            const issuesList = document.getElementById('issuesList');
+            
+            const sortedIssues = Object.entries(issues).sort((a, b) => b[1] - a[1]);
+            
+            issuesList.innerHTML = sortedIssues.map(([issue, count]) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
+                    <span style="font-weight: 500;">${formatIssueType(issue)}</span>
+                    <span class="issue-count">${count} emails</span>
+                </div>
+            `).join('');
+        }
+
+        function formatIssueType(issueType) {
+            const types = {
+                'subject_length': 'Subject Line Too Long',
+                'personalization': 'Missing Personalization',
+                'value_proposition': 'Weak Value Proposition',
+                'call_to_action': 'Missing Call to Action',
+                'length': 'Email Too Long',
+                'social_proof': 'Missing Social Proof'
+            };
+            return types[issueType] || issueType;
+        }
+
+        function showDetailedResults() {
+            if (!currentBatchResult) return;
+            
+            const tableBody = document.getElementById('resultsTableBody');
+            tableBody.innerHTML = '';
+            
+            currentBatchResult.results.forEach(result => {
+                const row = document.createElement('tr');
+                
+                const scoreClass = 
+                    result.score >= 80 ? 'score-excellent' :
+                    result.score >= 60 ? 'score-good' :
+                    result.score >= 40 ? 'score-fair' : 'score-poor';
+                
+                row.innerHTML = `
+                    <td>${result.id}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${result.subject}</td>
+                    <td><span class="score-badge ${scoreClass}">${result.score}</span></td>
+                    <td><span class="issue-count">${result.suggestion_count} issues</span></td>
+                    <td>${result.word_count}</td>
+                    <td>
+                        <button class="secondary-button" onclick="showEmailDetails(${result.id})" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                            View Details
+                        </button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            document.getElementById('detailedResultsSection').style.display = 'block';
+        }
+
+        function showEmailDetails(emailId) {
+            const email = currentBatchResult.results.find(r => r.id === emailId);
+            if (!email) return;
+            
+            alert(`Email #${emailId}\n\nSubject: ${email.subject}\n\nSuggestions:\n${email.suggestions.map(s => `• ${s.message}`).join('\n')}`);
+        }
+
+        async function exportResults() {
+            if (!currentBatchResult) return;
+            
+            try {
+                const response = await fetch(`/batch/export/${currentBatchResult.batch_id}`);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `email_analysis_${new Date().toISOString().slice(0,10)}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    showSuccess('CSV report downloaded successfully!');
+                } else {
+                    showError('Export failed');
+                }
+            } catch (error) {
+                showError('Export error: ' + error.message);
+            }
+        }
+
+        async function showCampaignResults(campaignId) {
+            try {
+                const response = await fetch(`/campaigns/${campaignId}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const campaign = data.data;
+                    
+                    document.getElementById('campaignStats').innerHTML = `
+                        <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px;">
+                            <h3>📈 ${campaign.name}</h3>
+                            <p>${campaign.description}</p>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                                <div>
+                                    <strong>Total Emails:</strong> ${campaign.total_emails}
+                                </div>
+                                <div>
+                                    <strong>Average Score:</strong> ${campaign.average_score}
+                                </div>
+                                <div>
+                                    <strong>Batches:</strong> ${campaign.batch_count}
+                                </div>
+                                <div>
+                                    <strong>Trend:</strong> ${campaign.trend}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('campaignSection').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Failed to load campaign stats:', error);
+            }
+        }
+
+        function resetAnalysis() {
+            currentBatchResult = null;
+            uploadedCsvContent = null;
+            
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('detailedResultsSection').style.display = 'none';
+            document.getElementById('campaignSection').style.display = 'none';
+            
+            document.getElementById('csvFile').value = '';
+            document.getElementById('campaignName').value = '';
+            document.getElementById('campaignDescription').value = '';
+            
+            // Reset toggle
+            const toggle = document.getElementById('rewriteToggle');
+            toggle.classList.remove('active');
+            includeRewrite = false;
+        }
+
+        // Drag and drop functionality
+        const uploadZone = document.getElementById('uploadZone');
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('csvFile').files = files;
+                handleFileUpload({ target: { files: files } });
+            }
+        });
+
+        // Utility functions
+        function showLoading(message) {
+            document.getElementById('loadingText').textContent = message;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function showError(message) {
+            // Create or update error banner
+            let banner = document.getElementById('errorBanner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'errorBanner';
+                banner.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #fee2e2;
+                    border: 1px solid #fecaca;
+                    color: #dc2626;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    max-width: 400px;
+                `;
+                document.body.appendChild(banner);
+            }
+            
+            banner.textContent = message;
+            banner.style.display = 'block';
+            
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            // Create or update success banner
+            let banner = document.getElementById('successBanner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'successBanner';
+                banner.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #d1fae5;
+                    border: 1px solid #a7f3d0;
+                    color: #065f46;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    max-width: 400px;
+                `;
+                document.body.appendChild(banner);
+            }
+            
+            banner.textContent = message;
+            banner.style.display = 'block';
+            
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

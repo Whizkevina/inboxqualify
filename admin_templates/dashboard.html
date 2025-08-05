@@ -353,6 +353,23 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Fallback Chart.js loading
+        window.addEventListener('load', function() {
+            if (typeof Chart === 'undefined') {
+                console.log('Loading Chart.js fallback...');
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+                script.onload = function() {
+                    console.log('Chart.js fallback loaded successfully');
+                };
+                script.onerror = function() {
+                    console.error('Chart.js fallback failed to load');
+                };
+                document.head.appendChild(script);
+            }
+        });
+    </script>
 </head>
 <body>
     <header class="header">
@@ -695,7 +712,18 @@
             document.getElementById('startDate').value = sevenDaysAgo.toISOString().split('T')[0];
             document.getElementById('endDate').value = today.toISOString().split('T')[0];
             
-            loadDashboardData();
+            // Wait for Chart.js to load before initializing dashboard
+            function initDashboard() {
+                if (typeof Chart === 'undefined') {
+                    console.log('Waiting for Chart.js to load...');
+                    setTimeout(initDashboard, 500);
+                    return;
+                }
+                console.log('Chart.js loaded, initializing dashboard...');
+                loadDashboardData();
+            }
+            
+            initDashboard();
         });
 
         async function loadDashboardData() {
@@ -820,7 +848,19 @@
         let dailyChart = null;
 
         function createDailyChart(dailyData) {
+            // Check if Chart.js is loaded
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js not loaded yet, retrying in 1 second...');
+                setTimeout(() => createDailyChart(dailyData), 1000);
+                return;
+            }
+            
             const canvas = document.getElementById('dailyChart');
+            if (!canvas) {
+                console.error('Daily chart canvas not found');
+                return;
+            }
+            
             const ctx = canvas.getContext('2d');
             
             // Destroy existing chart first
@@ -1133,7 +1173,19 @@
         let scoreDistributionChart = null;
 
         function createScoreDistributionChart(distributionData) {
+            // Check if Chart.js is loaded
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js not loaded yet, retrying in 1 second...');
+                setTimeout(() => createScoreDistributionChart(distributionData), 1000);
+                return;
+            }
+            
             const canvas = document.getElementById('scoreDistributionChart');
+            if (!canvas) {
+                console.error('Score distribution chart canvas not found');
+                return;
+            }
+            
             const ctx = canvas.getContext('2d');
             
             // Destroy existing chart first

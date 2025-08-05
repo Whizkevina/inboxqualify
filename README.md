@@ -2,9 +2,17 @@
 
 **AI-Powered Cold Email Scoring & Analysis Tool**
 
+> **⚠️ SECURITY NOTICE:** Before running this application, please complete the security setup by reading [SECURITY_SETUP.md](SECURITY_SETUP.md)
+
 InboxQualify is a sophisticated web application that uses artificial intelligence to analyze and score your cold emails, providing actionable feedback to boost response rates and improve outreach effectiveness.
 
 ![InboxQualify Demo](https://img.shields.io/badge/Status-Live-brightgreen) ![Python](https://img.shields.io/badge/Python-3.12+-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-Latest-green) ![AI](https://img.shields.io/badge/AI-Hugging%20Face-orange)
+
+## 🚨 Quick Security Setup
+
+1. **Copy environment template:** `cp .env.example .env`
+2. **Edit `.env` with YOUR credentials** (never use defaults!)
+3. **Read the full security guide:** [SECURITY_SETUP.md](SECURITY_SETUP.md)
 
 ## 🚀 What It Does
 
