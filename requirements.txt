@@ -6,3 +6,5 @@ jinja2
 python-multipart
 supabase
 psycopg2-binary
+passlib[bcrypt]
+python-jose[cryptography]

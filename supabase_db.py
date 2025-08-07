@@ -521,6 +521,47 @@ class SupabaseDB:
                 "error": str(e),
                 "timestamp": datetime.now().isoformat()
             }
+        
+    # In your supabase_db.py file, inside the SupabaseDB class:
+
+    def get_user_by_email(self, email: str):
+        """
+        Fetches a single user from the 'users' table by their email.
+        """
+        try:
+            # Query the 'users' table where the 'email' column matches
+            response = self.supabase.table('users').select('*').eq('email', email).execute()
+            
+            # The result is a list, so if it's not empty, return the first item (the user)
+            if response.data:
+                return response.data[0]
+            
+            # If no user is found, return None
+            return None
+        except Exception as e:
+            print(f"ERROR: Could not fetch user by email '{email}': {e}")
+            return None
+
+    def create_user(self, email: str, hashed_password: str):
+        """
+        Inserts a new user into the 'users' table.
+        """
+        try:
+            # Insert the new user data into the 'users' table
+            response = self.supabase.table('users').insert({
+                'email': email,
+                'password_hash': hashed_password,
+                'subscription_plan': 'free' # Default plan on signup
+            }).execute()
+
+            # If the insertion was successful, return the new user's data
+            if response.data:
+                return response.data[0]
+                
+            return None
+        except Exception as e:
+            print(f"ERROR: Could not create user '{email}': {e}")
+            return None
 
 # Global instance
 supabase_db = None

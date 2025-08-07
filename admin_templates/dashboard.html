@@ -602,20 +602,49 @@
                 <div class="section-card">
                     <h3 class="section-title">🚨 Email Alert System</h3>
                     
-                    <div class="alert info">
-                        <strong>💡 Setup Required:</strong> Configure email settings in your .env file:
-                        <ul style="margin-top: 0.5rem;">
-                            <li>SMTP_SERVER=smtp.gmail.com</li>
-                            <li>SMTP_PORT=587</li>
-                            <li>SMTP_USERNAME=your-email@gmail.com</li>
-                            <li>SMTP_PASSWORD=your-app-password</li>
-                            <li>ADMIN_EMAIL=admin@yourcompany.com</li>
-                        </ul>
+                    <!-- Email Configuration Status -->
+                    <div id="emailStatus" class="alert info">
+                        <strong>📧 Checking email configuration...</strong>
+                    </div>
+
+                    <div id="emailSetupInstructions" style="display: none;">
+                        <div class="alert warning">
+                            <strong>🔧 Email Setup Required:</strong>
+                            <p>To receive email alerts, you need to configure your email settings:</p>
+                            <ol style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                                <li><strong>Enable 2-Factor Authentication</strong> on your Gmail account</li>
+                                <li><strong>Generate an App Password</strong>:
+                                    <ul style="margin-top: 0.25rem; padding-left: 1rem;">
+                                        <li>Go to Google Account Settings → Security</li>
+                                        <li>Under "2-Step Verification", click "App passwords"</li>
+                                        <li>Generate a new app password for "Mail"</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Update your .env file</strong> with:
+                                    <pre style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; font-size: 0.85rem;">
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-16-digit-app-password
+ADMIN_EMAIL=your-email@gmail.com</pre>
+                                </li>
+                                <li><strong>Restart your server</strong> after updating the .env file</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div id="emailConfigured" style="display: none;">
+                        <div class="alert success">
+                            <strong>✅ Email alerts configured!</strong>
+                            <p>Your email alert system is properly configured and ready to send notifications.</p>
+                        </div>
                     </div>
 
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
                         <button class="btn" onclick="testEmailAlerts()">🧪 Test Alert System</button>
+                        <button class="btn success" onclick="testEmailDirectly()">📧 Send Test Email</button>
                         <button class="btn secondary" onclick="showAlertSettings()">⚙️ Alert Settings</button>
+                        <button class="btn" onclick="checkEmailStatus()">🔄 Refresh Status</button>
                     </div>
 
                     <div id="alertTestResults" style="margin-top: 1rem;"></div>
@@ -629,6 +658,7 @@
                                 <th>Alert Type</th>
                                 <th>Trigger Condition</th>
                                 <th>Status</th>
+                                <th>Description</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -636,19 +666,57 @@
                                 <td>High Error Rate</td>
                                 <td>Error rate > 10% in last hour</td>
                                 <td><span class="badge success">Active</span></td>
+                                <td>Monitors system errors and alerts when error rate exceeds threshold</td>
                             </tr>
                             <tr>
                                 <td>High Usage</td>
                                 <td>3x higher than 7-day average</td>
                                 <td><span class="badge success">Active</span></td>
+                                <td>Detects unusual spikes in email analysis requests</td>
                             </tr>
                             <tr>
                                 <td>API Failures</td>
                                 <td>5+ consecutive AI failures</td>
                                 <td><span class="badge success">Active</span></td>
+                                <td>Monitors HuggingFace API failures and alerts on consecutive issues</td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Alert History Section -->
+                <div class="section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 class="section-title">📋 Alert History</h3>
+                        <button class="btn" onclick="loadAlertHistory()">🔄 Refresh History</button>
+                    </div>
+                    
+                    <div id="alertHistoryContent">
+                        <div class="alert info">
+                            <strong>📝 Note:</strong> Click "Refresh History" to load recent alert history.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alert Settings Modal -->
+                <div id="alertSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3>⚙️ Alert Settings</h3>
+                            <button onclick="hideAlertSettings()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                        </div>
+                        
+                        <div id="alertSettingsContent">
+                            <div class="alert info">
+                                <strong>📝 Loading alert settings...</strong>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem; text-align: right;">
+                            <button class="btn secondary" onclick="hideAlertSettings()">Cancel</button>
+                            <button class="btn" onclick="saveAlertSettings()">Save Settings</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -743,7 +811,7 @@
                         document.getElementById('total-requests').textContent = stats.total_requests || 0;
                         document.getElementById('success-rate').textContent = (100 - (stats.error_rate || 0)).toFixed(1) + '%';
                         document.getElementById('unique-users').textContent = stats.unique_users || stats.unique_ips || 0;
-                        document.getElementById('avg-score').textContent = stats.avg_score ? stats.avg_score.toFixed(1) : 'N/A';
+                        document.getElementById('avg-score').textContent = stats.average_score ? stats.average_score.toFixed(1) : 'N/A';
                         document.getElementById('ai-enhanced').textContent = stats.ai_enhanced_requests || stats.total_requests || 0;
                         document.getElementById('avg-processing-time').textContent = stats.avg_processing_time ? stats.avg_processing_time + 'ms' : '~250ms';
                         
@@ -776,38 +844,71 @@
 
         async function loadAPIUsage() {
             try {
-                // For now, simulate API usage data - this would come from your actual API usage tracking
-                const apiData = {
-                    requests_last_30_days: 1250,
-                    estimated_tokens_used: 125000,
-                    monthly_limit: 1000000,
-                    estimated_remaining: 875000,
-                    usage_percentage: 12.5
-                };
-
-                document.getElementById('api-requests').textContent = apiData.requests_last_30_days.toLocaleString();
-                document.getElementById('api-tokens').textContent = apiData.estimated_tokens_used.toLocaleString();
-                document.getElementById('api-limit').textContent = apiData.monthly_limit.toLocaleString();
-                document.getElementById('api-remaining').textContent = apiData.estimated_remaining.toLocaleString();
+                // Fetch real HuggingFace API usage data from backend
+                const response = await fetch('/api/huggingface/usage');
                 
-                const progressBar = document.getElementById('api-progress');
-                const percentage = apiData.usage_percentage;
-                progressBar.style.width = percentage + '%';
-                
-                // Update progress bar color based on usage
-                if (percentage > 80) {
-                    progressBar.className = 'progress-fill danger';
-                } else if (percentage > 60) {
-                    progressBar.className = 'progress-fill warning';
+                if (response.ok) {
+                    const result = await response.json();
+                    const apiData = result.data;
+                    
+                    // Check if there's an error in the API data
+                    if (apiData.error) {
+                        console.warn('API usage error:', apiData.error);
+                        showAPIUsageError(apiData.error);
+                        return;
+                    }
+                    
+                    // Update UI with real data
+                    document.getElementById('api-requests').textContent = apiData.requests_last_30_days.toLocaleString();
+                    document.getElementById('api-tokens').textContent = apiData.estimated_tokens_used.toLocaleString();
+                    document.getElementById('api-limit').textContent = apiData.monthly_limit.toLocaleString();
+                    document.getElementById('api-remaining').textContent = apiData.estimated_remaining.toLocaleString();
+                    
+                    const progressBar = document.getElementById('api-progress');
+                    const percentage = apiData.usage_percentage;
+                    progressBar.style.width = percentage + '%';
+                    
+                    // Update progress bar color based on usage
+                    if (percentage > 80) {
+                        progressBar.className = 'progress-fill danger';
+                    } else if (percentage > 60) {
+                        progressBar.className = 'progress-fill warning';
+                    } else {
+                        progressBar.className = 'progress-fill';
+                    }
+                    
+                    document.getElementById('api-percentage').textContent = percentage + '% of monthly limit used';
+                    
+                    // Clear any previous error messages
+                    clearAPIUsageError();
+                    
                 } else {
-                    progressBar.className = 'progress-fill';
+                    console.error('Failed to load API usage:', response.status, response.statusText);
+                    showAPIUsageError('Failed to load API usage data from server');
                 }
-                
-                document.getElementById('api-percentage').textContent = percentage + '% of monthly limit used';
 
             } catch (error) {
                 console.error('Error loading API usage:', error);
+                showAPIUsageError('Network error while loading API usage data');
             }
+        }
+
+        function showAPIUsageError(message) {
+            // Show error state in API usage section
+            document.getElementById('api-requests').textContent = 'Error';
+            document.getElementById('api-tokens').textContent = 'Error';
+            document.getElementById('api-limit').textContent = 'Error';
+            document.getElementById('api-remaining').textContent = 'Error';
+            document.getElementById('api-percentage').textContent = message;
+            
+            const progressBar = document.getElementById('api-progress');
+            progressBar.style.width = '0%';
+            progressBar.className = 'progress-fill danger';
+        }
+
+        function clearAPIUsageError() {
+            // This function can be used to clear any error styling if needed
+            // For now, it's just a placeholder for future error handling improvements
         }
 
         async function loadChartsData() {
@@ -908,59 +1009,66 @@
 
         async function loadHourlyUsage() {
             try {
-                // Generate hourly usage for today
-                const hourlyData = [];
-                const currentHour = new Date().getHours();
+                // Fetch real hourly usage data from backend
+                const response = await fetch('/admin/analytics/hourly');
                 
-                for (let i = 0; i <= currentHour; i++) {
-                    const requests = Math.floor(Math.random() * 15) + 2;
-                    hourlyData.push({
-                        hour: `${i.toString().padStart(2, '0')}:00`,
-                        requests: requests
-                    });
-                }
-
-                const hourlyDiv = document.getElementById('hourlyUsage');
-                if (hourlyData.length === 0) {
-                    hourlyDiv.innerHTML = '<div class="alert info">No hourly data available.</div>';
+                if (response.ok) {
+                    const hourlyData = await response.json();
+                    
+                    const hourlyDiv = document.getElementById('hourlyUsage');
+                    if (hourlyData.length === 0) {
+                        hourlyDiv.innerHTML = '<div class="alert info">No usage data available for today.</div>';
+                    } else {
+                        hourlyDiv.innerHTML = hourlyData.map(hour => 
+                            `<div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <span>${hour.hour}</span>
+                                <span><strong>${hour.requests}</strong> requests</span>
+                            </div>`
+                        ).join('');
+                    }
                 } else {
-                    hourlyDiv.innerHTML = hourlyData.map(hour => 
-                        `<div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid #e5e7eb;">
-                            <span>${hour.hour}</span>
-                            <span><strong>${hour.requests}</strong> requests</span>
-                        </div>`
-                    ).join('');
+                    console.error('Failed to load hourly usage:', response.status);
+                    document.getElementById('hourlyUsage').innerHTML = '<div class="alert warning">Failed to load hourly data.</div>';
                 }
             } catch (error) {
                 console.error('Error loading hourly usage:', error);
+                document.getElementById('hourlyUsage').innerHTML = '<div class="alert warning">Error loading hourly data.</div>';
             }
         }
 
         async function loadErrorData() {
             try {
-                // Generate some sample error data - in real implementation this would come from your error tracking
-                const errors = [
-                    { error: 'Invalid email format', count: 12 },
-                    { error: 'API timeout', count: 8 },
-                    { error: 'Rate limit exceeded', count: 5 },
-                    { error: 'Authentication failed', count: 3 }
-                ];
-
-                if (errors.length > 0) {
+                // Fetch real error data from backend
+                const response = await fetch('/admin/errors');
+                
+                if (response.ok) {
+                    const errors = await response.json();
+                    
                     const errorSection = document.getElementById('error-section');
                     const errorList = document.getElementById('error-list');
                     
-                    errorList.innerHTML = errors.map(error => 
-                        `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
-                            <div style="font-family: 'Courier New', monospace; font-size: 0.85rem; color: #dc2626;">${error.error}</div>
-                            <div style="background: #fee2e2; color: #dc2626; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">${error.count}</div>
-                        </div>`
-                    ).join('');
-                    
-                    errorSection.style.display = 'block';
+                    if (errors.length > 0) {
+                        errorList.innerHTML = errors.map(error => 
+                            `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div style="font-family: 'Courier New', monospace; font-size: 0.85rem; color: #dc2626;">${error.error}</div>
+                                <div style="background: #fee2e2; color: #dc2626; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">${error.count}</div>
+                            </div>`
+                        ).join('');
+                        
+                        errorSection.style.display = 'block';
+                    } else {
+                        // Hide error section if no errors
+                        errorSection.style.display = 'none';
+                    }
+                } else {
+                    console.error('Failed to load error data:', response.status);
+                    // Hide error section on failure
+                    document.getElementById('error-section').style.display = 'none';
                 }
             } catch (error) {
                 console.error('Error loading error data:', error);
+                // Hide error section on error
+                document.getElementById('error-section').style.display = 'none';
             }
         }
 
@@ -1049,6 +1157,11 @@
             
             // Add active class to selected nav tab
             event.target.classList.add('active');
+            
+            // Load email status if alerts tab is selected
+            if (tabName === 'alerts') {
+                checkEmailStatus();
+            }
         }
 
         // Logout functionality
@@ -1342,6 +1455,243 @@
             }
         }
 
+        async function testEmailDirectly() {
+            try {
+                const response = await fetch('/admin/alerts/test-email', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        document.getElementById('alertTestResults').innerHTML = `
+                            <div class="alert success">
+                                <strong>✅ Test Email Sent Successfully!</strong><br>
+                                <small>${result.message}</small><br>
+                                <small>Recipient: ${result.recipient}</small>
+                            </div>
+                        `;
+                    } else {
+                        document.getElementById('alertTestResults').innerHTML = `
+                            <div class="alert warning">
+                                <strong>⚠️ Test Email Failed:</strong> ${result.message}
+                            </div>
+                        `;
+                    }
+                } else {
+                    document.getElementById('alertTestResults').innerHTML = `
+                        <div class="alert warning">
+                            <strong>⚠️ Test Email Failed:</strong> Server error
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('alertTestResults').innerHTML = `
+                    <div class="alert warning">
+                        <strong>❌ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function checkEmailStatus() {
+            try {
+                const response = await fetch('/admin/alerts/status');
+                if (response.ok) {
+                    const status = await response.json();
+                    displayEmailStatus(status);
+                } else {
+                    displayEmailStatus({ configured: false, error: 'Failed to check email status' });
+                }
+            } catch (error) {
+                displayEmailStatus({ configured: false, error: error.message });
+            }
+        }
+
+        function displayEmailStatus(status) {
+            const statusDiv = document.getElementById('emailStatus');
+            const setupDiv = document.getElementById('emailSetupInstructions');
+            const configuredDiv = document.getElementById('emailConfigured');
+            
+            if (status.configured) {
+                statusDiv.innerHTML = '<strong>✅ Email alerts configured!</strong>';
+                statusDiv.className = 'alert success';
+                setupDiv.style.display = 'none';
+                configuredDiv.style.display = 'block';
+            } else {
+                statusDiv.innerHTML = '<strong>⚠️ Email alerts not configured</strong>';
+                statusDiv.className = 'alert warning';
+                setupDiv.style.display = 'block';
+                configuredDiv.style.display = 'none';
+                
+                if (status.issues && status.issues.length > 0) {
+                    statusDiv.innerHTML += `<br><small>Issues: ${status.issues.join(', ')}</small>`;
+                }
+            }
+        }
+
+        function showAlertSettings() {
+            document.getElementById('alertSettingsModal').style.display = 'block';
+            loadCurrentAlertConfig();
+        }
+
+        function hideAlertSettings() {
+            document.getElementById('alertSettingsModal').style.display = 'none';
+        }
+
+        async function loadCurrentAlertConfig() {
+            try {
+                // Load both email status and alert settings
+                const [statusResponse, settingsResponse] = await Promise.all([
+                    fetch('/admin/alerts/status'),
+                    fetch('/admin/alerts/settings')
+                ]);
+                
+                const status = statusResponse.ok ? await statusResponse.json() : null;
+                const settings = settingsResponse.ok ? await settingsResponse.json() : null;
+                
+                const configDiv = document.getElementById('alertSettingsContent');
+                
+                if (status && settings) {
+                    configDiv.innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <!-- Email Configuration -->
+                            <div>
+                                <h4>📧 Email Configuration</h4>
+                                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                                    <p><strong>SMTP Server:</strong> ${status.smtp_server}:${status.smtp_port}</p>
+                                    <p><strong>Username:</strong> ${status.smtp_username}</p>
+                                    <p><strong>Password:</strong> ${status.smtp_password_set ? '✅ Configured' : '❌ Not set'}</p>
+                                    <p><strong>Admin Email:</strong> ${status.admin_email || 'Not configured'}</p>
+                                </div>
+                                
+                                <div class="alert ${status.configured ? 'success' : 'warning'}">
+                                    <strong>${status.configured ? '✅ Email alerts configured!' : '⚠️ Email alerts not configured'}</strong>
+                                    ${status.issues && status.issues.length > 0 ? `<br><small>Issues: ${status.issues.join(', ')}</small>` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Alert Settings -->
+                            <div>
+                                <h4>🚨 Alert Thresholds</h4>
+                                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                                    <div style="margin-bottom: 1rem;">
+                                        <label><strong>Error Rate Alert:</strong></label>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <input type="checkbox" id="errorRateEnabled" ${settings.settings.alerts_enabled.error_rate ? 'checked' : ''}>
+                                            <span>Trigger when error rate ></span>
+                                            <input type="number" id="errorRateThreshold" value="${settings.settings.error_rate_threshold}" min="1" max="100" step="0.1" style="width: 80px;">
+                                            <span>% (min ${settings.settings.error_rate_min_requests} requests)</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 1rem;">
+                                        <label><strong>High Usage Alert:</strong></label>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <input type="checkbox" id="highUsageEnabled" ${settings.settings.alerts_enabled.high_usage ? 'checked' : ''}>
+                                            <span>Trigger when usage ></span>
+                                            <input type="number" id="highUsageMultiplier" value="${settings.settings.high_usage_multiplier}" min="1" max="10" step="0.1" style="width: 80px;">
+                                            <span>x average (min ${settings.settings.high_usage_min_requests} requests)</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 1rem;">
+                                        <label><strong>API Failure Alert:</strong></label>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <input type="checkbox" id="apiFailureEnabled" ${settings.settings.alerts_enabled.api_failure ? 'checked' : ''}>
+                                            <span>Trigger after</span>
+                                            <input type="number" id="apiFailureThreshold" value="${settings.settings.api_failure_threshold}" min="1" max="20" style="width: 80px;">
+                                            <span>consecutive failures (${settings.settings.api_failure_window} min window)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h4>⏰ Quiet Hours</h4>
+                                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <input type="checkbox" id="quietHoursEnabled" ${settings.settings.quiet_hours.enabled ? 'checked' : ''}>
+                                        <span>Enable quiet hours</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span>From:</span>
+                                        <input type="time" id="quietHoursStart" value="${settings.settings.quiet_hours.start}" style="width: 100px;">
+                                        <span>To:</span>
+                                        <input type="time" id="quietHoursEnd" value="${settings.settings.quiet_hours.end}" style="width: 100px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <h4>📧 Email Recipients</h4>
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                                <p><strong>Current Recipients:</strong></p>
+                                <ul>
+                                    ${settings.settings.email_recipients.map(email => `<li>${email}</li>`).join('')}
+                                </ul>
+                                <p style="font-size: 0.9rem; color: #6b7280; margin-top: 0.5rem;">
+                                    <em>Note: Email recipients are configured in your .env file (ADMIN_EMAIL)</em>
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    configDiv.innerHTML = `
+                        <div class="alert warning">
+                            <strong>⚠️ Failed to load settings</strong><br>
+                            <small>Error loading alert configuration</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('alertSettingsContent').innerHTML = `
+                    <div class="alert warning">
+                        <strong>❌ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function saveAlertSettings() {
+            try {
+                // Collect all form values
+                const settings = {
+                    alerts_enabled: {
+                        error_rate: document.getElementById('errorRateEnabled')?.checked || false,
+                        high_usage: document.getElementById('highUsageEnabled')?.checked || false,
+                        api_failure: document.getElementById('apiFailureEnabled')?.checked || false
+                    },
+                    error_rate_threshold: parseFloat(document.getElementById('errorRateThreshold')?.value || 10.0),
+                    high_usage_multiplier: parseFloat(document.getElementById('highUsageMultiplier')?.value || 3.0),
+                    api_failure_threshold: parseInt(document.getElementById('apiFailureThreshold')?.value || 5),
+                    quiet_hours: {
+                        enabled: document.getElementById('quietHoursEnabled')?.checked || false,
+                        start: document.getElementById('quietHoursStart')?.value || '22:00',
+                        end: document.getElementById('quietHoursEnd')?.value || '08:00'
+                    }
+                };
+
+                const response = await fetch('/admin/alerts/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert('✅ Alert settings saved successfully!\n\n' + (result.note || ''));
+                    hideAlertSettings();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Failed to save alert settings: ' + (error.detail || error.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error saving alert settings: ' + error.message);
+            }
+        }
+
         // Audit Log
         async function loadAuditLog() {
             try {
@@ -1380,7 +1730,7 @@
                         ${logs.map(log => `
                             <tr>
                                 <td>${log.timestamp}</td>
-                                <td>${log.username}</td>
+                                <td>${log.admin_username || log.username || 'Unknown'}</td>
                                 <td><span class="badge success">${log.action}</span></td>
                                 <td>${log.details || 'N/A'}</td>
                                 <td>${log.ip_address || 'N/A'}</td>
@@ -1391,6 +1741,62 @@
             `;
             
             resultsDiv.innerHTML = tableHTML;
+        }
+
+        async function loadAlertHistory() {
+            try {
+                const response = await fetch('/admin/alerts/history');
+                if (response.ok) {
+                    const data = await response.json();
+                    const historyDiv = document.getElementById('alertHistoryContent');
+                    
+                    if (data.alerts && data.alerts.length > 0) {
+                        const tableHTML = `
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date/Time</th>
+                                        <th>Alert Type</th>
+                                        <th>Details</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.alerts.map(alert => `
+                                        <tr>
+                                            <td>${alert.timestamp}</td>
+                                            <td><span class="badge ${alert.type === 'error_rate' ? 'danger' : alert.type === 'high_usage' ? 'warning' : 'info'}">${alert.type.replace('_', ' ').toUpperCase()}</span></td>
+                                            <td>${alert.details}</td>
+                                            <td><span class="badge success">Sent</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                        historyDiv.innerHTML = tableHTML;
+                    } else {
+                        historyDiv.innerHTML = `
+                            <div class="alert success">
+                                <strong>✅ No Alerts Sent</strong><br>
+                                <small>${data.message || 'No alerts have been triggered recently. This is good news - it means your system is running smoothly!'}</small>
+                            </div>
+                        `;
+                    }
+                } else {
+                    document.getElementById('alertHistoryContent').innerHTML = `
+                        <div class="alert warning">
+                            <strong>⚠️ Failed to load alert history</strong><br>
+                            <small>Server error occurred while loading history</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('alertHistoryContent').innerHTML = `
+                    <div class="alert warning">
+                        <strong>❌ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
         }
 
         // Export functions
@@ -1450,11 +1856,35 @@
         }
 
         function generateReport() {
-            alert('📈 PDF report generation will be implemented in the next phase!');
-        }
-
-        function showAlertSettings() {
-            alert('⚙️ Alert settings management will be implemented in the next phase!');
+            // Show loading state
+            const originalText = event.target.textContent;
+            event.target.textContent = '📈 Generating...';
+            event.target.disabled = true;
+            
+            fetch('/admin/reports/generate-pdf', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Create a new window with the report
+                    const reportWindow = window.open('', '_blank');
+                    reportWindow.document.write(data.html_content);
+                    reportWindow.document.close();
+                    
+                    alert('✅ PDF report generated successfully!\n\n' + (data.note || ''));
+                } else {
+                    alert('❌ Failed to generate report: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('❌ Error generating report: ' + error.message);
+            })
+            .finally(() => {
+                // Restore button state
+                event.target.textContent = originalText;
+                event.target.disabled = false;
+            });
         }
     </script>
 </body>

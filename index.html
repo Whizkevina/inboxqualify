@@ -22,6 +22,7 @@
                 <a href="/templates.html" class="nav-link">📧 Email Templates</a>
                 <a href="/batch-analysis.html" class="nav-link">📊 Batch Analysis</a>
                 <!-- <a href="/admin" class="nav-link">🔧 Admin</a> -->
+                <!-- <a href="/login.html" class="cta-button" style="width: auto; padding: 0.5rem 1rem;">Login / Sign Up</a> -->
                 <button id="dark-mode-toggle" class="nav-link theme-toggle">🌙 Dark Mode</button>
             </nav>
         </div>
@@ -104,6 +105,74 @@
                                 <button type="button" id="export-html" class="secondary-button">🌐 Export as HTML</button>
                                 <button type="button" id="copy-results" class="secondary-button">📋 Copy Results</button>
                             </div>
+                        </div>
+                        
+                        <!-- AI Rewrite Section -->
+                        <div class="ai-rewrite-section" id="ai-rewrite-section" style="display: none;">
+                            <h3>🤖 AI Email Rewriter</h3>
+                            <p>Let AI rewrite your email to fix all issues and make it perfect:</p>
+                            
+                            <div class="rewrite-context">
+                                <h4>Additional Context (Optional):</h4>
+                                <div class="context-grid">
+                                    <input type="text" id="company-name" placeholder="Company name">
+                                    <input type="text" id="recipient-name" placeholder="Recipient name">
+                                    <input type="text" id="industry" placeholder="Industry">
+                                    <input type="text" id="specific-detail" placeholder="Research detail">
+                                </div>
+                            </div>
+                            
+                            <button type="button" id="perform-rewrite" class="cta-button">✨ Rewrite Email</button>
+                        </div>
+                        
+                        <!-- Rewrite Results Section -->
+                        <div class="rewrite-results" id="rewrite-results" style="display: none;">
+                            <h3>📊 Before vs After Comparison</h3>
+                            
+                            <div class="score-comparison">
+                                <div class="score-item">
+                                    <div class="score-number" id="before-score">0</div>
+                                    <div class="score-label">Before</div>
+                                </div>
+                                <div class="score-arrow">→</div>
+                                <div class="score-item">
+                                    <div class="score-number" id="after-score">0</div>
+                                    <div class="score-label">After</div>
+                                </div>
+                                <div class="score-improvement">
+                                    <div class="score-number" id="improvement">+0</div>
+                                    <div class="score-label">Improvement</div>
+                                </div>
+                            </div>
+                            
+                            <div class="email-comparison">
+                                <div class="email-column">
+                                    <h4>📧 Original Email</h4>
+                                    <div class="email-preview-box">
+                                        <div class="email-subject" id="original-subject"></div>
+                                        <div class="email-body" id="original-body"></div>
+                                    </div>
+                                </div>
+                                <div class="email-column">
+                                    <h4>✨ AI Rewritten Email</h4>
+                                    <div class="email-preview-box improved">
+                                        <div class="email-subject" id="rewritten-subject"></div>
+                                        <div class="email-body" id="rewritten-body"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="rewrite-actions">
+                                <button type="button" id="copy-rewritten" class="cta-button">📋 Copy Rewritten Email</button>
+                                <button type="button" id="show-details" class="secondary-button">🔍 Show Details</button>
+                                <button type="button" id="rewrite-again" class="secondary-button">🔄 Rewrite Again</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Rewrite Details Section -->
+                        <div class="rewrite-details" id="rewrite-details" style="display: none;">
+                            <h3>🔧 What Was Improved</h3>
+                            <div id="improvements-list"></div>
                         </div>
                     </section>
                 </div>

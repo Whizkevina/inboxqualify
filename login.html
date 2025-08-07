@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Sign Up - inboxqualify</title>
+    <meta name="description" content="Analyze and score your cold emails with AI. Get instant feedback on personalization, value proposition, and professionalism to boost response rates.">
+    <link rel="shortcut icon" href="favicon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="js/config.js"></script>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container">
+            <a href="/" class="logo">inboxqualify</a>
+            <div class="tagline">Your cold emails, scored by AI.</div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="auth-container">
+            <div class="auth-toggle">
+                <button id="show-login" class="active">Log In</button>
+                <button id="show-signup">Sign Up</button>
+            </div>
+
+            <form id="login-form" class="auth-form">
+                <h2>Welcome Back</h2>
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="cta-button">Log In</button>
+            </form>
+
+            <form id="signup-form" class="auth-form" style="display: none;">
+                <h2>Create Your Account</h2>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" minlength="6" required>
+                </div>
+                <button type="submit" class="cta-button">Sign Up</button>
+            </form>
+            
+            <div id="auth-message"></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2025 inboxqualify | Built with precision.</p>
+        </div>
+    </footer>
+
+    <script src="js/login.js"></script>
+</body>
+</html>
