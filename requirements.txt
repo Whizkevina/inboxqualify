@@ -8,3 +8,4 @@ supabase
 psycopg2-binary
 passlib[bcrypt]
 python-jose[cryptography]
+xhtml2pdf

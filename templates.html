@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,24 +9,25 @@
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <script src="/js/config.js"></script>
     <style>
         .template-section {
             background: white;
             padding: 2rem;
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
         }
-        
+
         .template-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
             margin-top: 1.5rem;
         }
-        
+
         .template-card {
             border: 2px solid #e5e7eb;
             border-radius: 8px;
@@ -33,30 +35,30 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
         .template-card:hover {
             border-color: #3b82f6;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
         }
-        
+
         .template-card.selected {
             border-color: #3b82f6;
             background: #eff6ff;
         }
-        
+
         .template-name {
             font-weight: 600;
             color: #1f2937;
             margin-bottom: 0.5rem;
         }
-        
+
         .template-preview {
             color: #6b7280;
             font-size: 0.9rem;
             margin-bottom: 1rem;
         }
-        
+
         .tips-count {
             background: #3b82f6;
             color: white;
@@ -64,25 +66,25 @@
             border-radius: 12px;
             font-size: 0.8rem;
         }
-        
+
         .variable-input {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1rem;
             margin: 1.5rem 0;
         }
-        
+
         .variable-group {
             display: flex;
             flex-direction: column;
         }
-        
+
         .variable-label {
             font-weight: 500;
             color: #374151;
             margin-bottom: 0.5rem;
         }
-        
+
         .suggestion-item {
             background: #fef3c7;
             border-left: 4px solid #f59e0b;
@@ -90,22 +92,22 @@
             margin: 0.5rem 0;
             border-radius: 0 6px 6px 0;
         }
-        
+
         .suggestion-item.high {
             background: #fee2e2;
             border-left-color: #ef4444;
         }
-        
+
         .suggestion-item.medium {
             background: #fef3c7;
             border-left-color: #f59e0b;
         }
-        
+
         .suggestion-item.low {
             background: #ecfdf5;
             border-left-color: #10b981;
         }
-        
+
         .score-display {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -114,13 +116,13 @@
             text-align: center;
             margin: 1rem 0;
         }
-        
+
         .score-number {
             font-size: 2.5rem;
             font-weight: bold;
             margin-bottom: 0.5rem;
         }
-        
+
         .email-preview {
             background: #f9fafb;
             border: 1px solid #e5e7eb;
@@ -128,7 +130,7 @@
             padding: 1.5rem;
             margin-top: 1rem;
         }
-        
+
         .email-subject {
             font-weight: 600;
             color: #1f2937;
@@ -138,7 +140,7 @@
             min-height: 1.5em;
             display: block;
         }
-        
+
         .email-body {
             white-space: pre-wrap;
             line-height: 1.6;
@@ -146,7 +148,7 @@
             min-height: 2em;
             display: block;
         }
-        
+
         .tips-section {
             background: #f0f9ff;
             border: 1px solid #bae6fd;
@@ -154,13 +156,13 @@
             padding: 1.5rem;
             margin-top: 1rem;
         }
-        
+
         .tip-item {
             margin: 0.5rem 0;
             padding-left: 1rem;
             position: relative;
         }
-        
+
         .tip-item::before {
             content: "💡";
             position: absolute;
@@ -168,17 +170,15 @@
         }
     </style>
 </head>
+
 <body>
 
     <header class="header">
         <div class="container">
             <div class="logo">InboxQualify</div>
-            <div class="tagline">AI-Powered Email Analysis</div>
             <nav class="header-nav">
-                <a href="/" class="nav-link">🏠 Home</a>
-                <a href="/batch-analysis.html" class="nav-link">📊 Batch Analysis</a>
-                <!-- <a href="/admin" class="nav-link">🔧 Admin</a> -->
-                <button id="dark-mode-toggle" class="nav-link theme-toggle">🌙 Dark Mode</button>
+                <a href="/" class="nav-link">Home</a>
+                <a href="/batch-analysis.html" class="nav-link">Batch Analysis</a>
             </nav>
         </div>
     </header>
@@ -218,7 +218,7 @@
                     <div class="email-subject" id="previewSubject"></div>
                     <div class="email-body" id="previewBody"></div>
                 </div>
-                
+
                 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button class="cta-button" onclick="analyzeEmail()">Get Suggestions</button>
                     <button class="secondary-button" onclick="copyEmail()">Copy Email</button>
@@ -228,16 +228,16 @@
             <!-- Suggestions Section -->
             <div class="template-section" id="suggestionsSection" style="display: none;">
                 <h2>🎯 Improvement Suggestions</h2>
-                
+
                 <div class="score-display">
                     <div class="score-number" id="improvementScore">0</div>
                     <div>Improvement Score</div>
                 </div>
-                
+
                 <div id="suggestionsList">
                     <!-- Suggestions will be displayed here -->
                 </div>
-                
+
                 <div class="tips-section" id="tipsSection">
                     <h3>💡 Template Tips</h3>
                     <div id="templateTips"></div>
@@ -248,17 +248,17 @@
             <div class="template-section">
                 <h2>🔍 Quick Email Analysis</h2>
                 <p>Already have an email? Get instant improvement suggestions:</p>
-                
+
                 <div class="form-group">
                     <label for="quickSubject">Email Subject:</label>
                     <input type="text" id="quickSubject" placeholder="Enter your email subject line">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="quickBody">Email Body:</label>
                     <textarea id="quickBody" rows="8" placeholder="Enter your email content"></textarea>
                 </div>
-                
+
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button class="cta-button" onclick="analyzeQuickEmail()">Analyze & Get Suggestions</button>
                     <button class="secondary-button" onclick="rewriteQuickEmail()">🔄 AI Rewrite Email</button>
@@ -269,7 +269,7 @@
             <div class="template-section" id="rewriterSection" style="display: none;">
                 <h2>🤖 AI Email Rewriter</h2>
                 <p>Let AI rewrite your email to fix all issues and make it perfect:</p>
-                
+
                 <div class="form-group">
                     <label for="rewriteContext">Additional Context (Optional):</label>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
@@ -279,14 +279,14 @@
                         <input type="text" id="specificDetail" placeholder="Research detail">
                     </div>
                 </div>
-                
+
                 <button class="cta-button" onclick="performRewrite()">✨ Rewrite Email</button>
             </div>
 
             <!-- Rewrite Results Section -->
             <div class="template-section" id="rewriteResults" style="display: none;">
                 <h2>📊 Before vs After Comparison</h2>
-                
+
                 <div class="score-display">
                     <div style="display: flex; justify-content: space-around; align-items: center;">
                         <div>
@@ -304,7 +304,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
                     <div>
                         <h3>📧 Original Email</h3>
@@ -321,7 +321,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center;">
                     <button class="cta-button" onclick="copyRewrittenEmail()">📋 Copy Rewritten Email</button>
                     <button class="secondary-button" onclick="showRewriteDetails()">🔍 Show Details</button>
@@ -340,25 +340,7 @@
     </main>
 
     <script>
-        // Dark mode functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const darkModeToggle = document.getElementById('dark-mode-toggle');
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            updateToggleText(savedTheme);
-            
-            darkModeToggle.addEventListener('click', function() {
-                const currentTheme = document.documentElement.getAttribute('data-theme');
-                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                document.documentElement.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-                updateToggleText(newTheme);
-            });
-            
-            function updateToggleText(theme) {
-                darkModeToggle.textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-            }
-            
+        document.addEventListener('DOMContentLoaded', function () {
             loadTemplates();
         });
 
@@ -370,16 +352,16 @@
         async function loadTemplates() {
             try {
                 const apiUrl = API_CONFIG.getURL('/api/templates');
-                
+
                 const response = await fetch(apiUrl);
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
+
                 const responseText = await response.text();
                 const data = JSON.parse(responseText);
-                
+
                 if (data.status === 'success') {
                     templates = data.data;
                     displayTemplates();
@@ -388,11 +370,11 @@
                 }
             } catch (error) {
                 let errorMessage = 'Error loading templates: ' + error.message;
-                
+
                 if (error.message.includes('fetch')) {
                     errorMessage += '\n\n🔧 Production Issue: Check that your Render backend URL is correctly configured in js/config.js';
                 }
-                
+
                 showError(errorMessage);
             }
         }
@@ -405,26 +387,26 @@
                 const card = document.createElement('div');
                 card.className = 'template-card';
                 card.onclick = () => selectTemplate(industry);
-                
+
                 card.innerHTML = `
                     <div class="template-name">${template.name}</div>
                     <div class="template-preview">${template.preview}</div>
                     <span class="tips-count">${template.tips_count} tips</span>
                 `;
-                
+
                 grid.appendChild(card);
             });
         }
 
         async function selectTemplate(industry) {
             selectedTemplate = industry;
-            
+
             // Update visual selection
             document.querySelectorAll('.template-card').forEach(card => {
                 card.classList.remove('selected');
             });
             event.target.closest('.template-card').classList.add('selected');
-            
+
             // Get template details
             try {
                 const response = await fetch(API_CONFIG.getURL('/api/templates/generate'), {
@@ -437,13 +419,13 @@
                         variables: {}
                     })
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (data.status === 'success') {
                     const templateData = data.data;
                     currentEmailContent = templateData;
@@ -459,22 +441,22 @@
         function showVariableInputs(variables) {
             const section = document.getElementById('variableSection');
             const container = document.getElementById('variableInputs');
-            
+
             container.innerHTML = '';
-            
+
             if (variables && variables.length > 0) {
                 variables.forEach(variable => {
                     const group = document.createElement('div');
                     group.className = 'variable-group';
-                    
+
                     group.innerHTML = `
                         <label class="variable-label">${formatVariableName(variable)}:</label>
                         <input type="text" id="var_${variable}" placeholder="Enter ${variable}">
                     `;
-                    
+
                     container.appendChild(group);
                 });
-                
+
                 section.style.display = 'block';
             } else {
                 // No variables needed, generate immediately
@@ -491,7 +473,7 @@
                 showError('Please select a template first');
                 return;
             }
-            
+
             // Collect variables
             const variables = {};
             const inputs = document.querySelectorAll('[id^="var_"]');
@@ -499,7 +481,7 @@
                 const variable = input.id.replace('var_', '');
                 variables[variable] = input.value || `{${variable}}`;
             });
-            
+
             try {
                 const response = await fetch(API_CONFIG.getURL('/api/templates/generate'), {
                     method: 'POST',
@@ -511,13 +493,13 @@
                         variables: variables
                     })
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (data.status === 'success') {
                     const templateData = data.data;
                     currentEmailContent = templateData;
@@ -536,22 +518,22 @@
                 showError('Invalid email template data received');
                 return;
             }
-            
+
             // Check if DOM elements exist
             const subjectElement = document.getElementById('previewSubject');
             const bodyElement = document.getElementById('previewBody');
             const previewSection = document.getElementById('emailPreview');
             const emailPreviewContainer = previewSection ? previewSection.querySelector('.email-preview') : null;
-            
+
             if (!subjectElement || !bodyElement || !previewSection) {
                 showError('Page structure error - required elements missing');
                 return;
             }
-            
+
             // Set the content safely using textContent and manual line break handling
             subjectElement.textContent = templateData.subject;
             bodyElement.textContent = templateData.body;
-            
+
             // Force the elements to be visible and have proper dimensions
             subjectElement.style.display = 'block';
             bodyElement.style.display = 'block';
@@ -563,17 +545,17 @@
             bodyElement.style.minHeight = '1em';
             subjectElement.style.height = 'auto';
             bodyElement.style.height = 'auto';
-            
+
             // Also ensure the email-preview container is visible
             if (emailPreviewContainer) {
                 emailPreviewContainer.style.display = 'block';
                 emailPreviewContainer.style.visibility = 'visible';
                 emailPreviewContainer.style.opacity = '1';
             }
-            
+
             // Show the preview section
             previewSection.style.display = 'block';
-            
+
             // Show tips
             const tipsSection = document.getElementById('templateTips');
             tipsSection.innerHTML = '';
@@ -592,7 +574,7 @@
                 showError('No email content to analyze');
                 return;
             }
-            
+
             try {
                 const response = await fetch(API_CONFIG.getURL('/suggestions'), {
                     method: 'POST',
@@ -604,9 +586,9 @@
                         body: currentEmailContent.body
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.status === 'success') {
                     showSuggestions(data.data);
                 } else {
@@ -620,12 +602,12 @@
         async function analyzeQuickEmail() {
             const subject = document.getElementById('quickSubject').value;
             const body = document.getElementById('quickBody').value;
-            
+
             if (!subject.trim() || !body.trim()) {
                 showError('Please enter both subject and body');
                 return;
             }
-            
+
             try {
                 const response = await fetch(API_CONFIG.getURL('/suggestions'), {
                     method: 'POST',
@@ -637,13 +619,13 @@
                         body: body
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.status === 'success') {
                     currentEmailContent = { subject, body };
                     showSuggestions(data.data);
-                    
+
                     // Show preview of analyzed email
                     document.getElementById('previewSubject').textContent = subject;
                     document.getElementById('previewBody').textContent = body;
@@ -658,10 +640,10 @@
 
         function showSuggestions(analysisData) {
             document.getElementById('improvementScore').textContent = analysisData.improvement_score;
-            
+
             const suggestionsList = document.getElementById('suggestionsList');
             suggestionsList.innerHTML = '';
-            
+
             if (analysisData.suggestions.length === 0) {
                 const successItem = document.createElement('div');
                 successItem.className = 'suggestion-item low';
@@ -671,33 +653,33 @@
                 analysisData.suggestions.forEach(suggestion => {
                     const item = document.createElement('div');
                     item.className = `suggestion-item ${suggestion.priority}`;
-                    
+
                     const prioritySpan = document.createElement('strong');
                     prioritySpan.textContent = `${suggestion.priority.toUpperCase()} Priority:`;
-                    
+
                     const messageSpan = document.createElement('span');
                     messageSpan.textContent = ` ${suggestion.message}`;
-                    
+
                     item.appendChild(prioritySpan);
                     item.appendChild(messageSpan);
                     suggestionsList.appendChild(item);
                 });
             }
-            
+
             // Add word count and subject length info
             const statsInfo = document.createElement('div');
             statsInfo.style.cssText = 'margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 6px;';
-            
+
             const statsText = document.createElement('strong');
             statsText.textContent = 'Email Stats: ';
-            
+
             const statsDetails = document.createElement('span');
             statsDetails.textContent = `${analysisData.word_count} words | Subject length: ${analysisData.subject_length} characters`;
-            
+
             statsInfo.appendChild(statsText);
             statsInfo.appendChild(statsDetails);
             suggestionsList.appendChild(statsInfo);
-            
+
             document.getElementById('suggestionsSection').style.display = 'block';
         }
 
@@ -706,9 +688,9 @@
                 showError('No email content to copy');
                 return;
             }
-            
+
             const emailText = `Subject: ${currentEmailContent.subject}\n\n${currentEmailContent.body}`;
-            
+
             navigator.clipboard.writeText(emailText).then(() => {
                 showSuccess('Email copied to clipboard!');
             }).catch(() => {
@@ -743,10 +725,10 @@
                 `;
                 document.body.appendChild(banner);
             }
-            
+
             banner.textContent = message;
             banner.style.display = 'block';
-            
+
             setTimeout(() => {
                 banner.style.display = 'none';
             }, 5000);
@@ -772,10 +754,10 @@
                 `;
                 document.body.appendChild(banner);
             }
-            
+
             banner.textContent = message;
             banner.style.display = 'block';
-            
+
             setTimeout(() => {
                 banner.style.display = 'none';
             }, 3000);
@@ -785,15 +767,15 @@
         function rewriteQuickEmail() {
             const subject = document.getElementById('quickSubject').value;
             const body = document.getElementById('quickBody').value;
-            
+
             if (!subject.trim() || !body.trim()) {
                 showError('Please enter both subject and body to rewrite');
                 return;
             }
-            
+
             // Show rewriter section
             document.getElementById('rewriterSection').style.display = 'block';
-            
+
             // Pre-fill the current email content
             currentEmailContent = { subject, body };
         }
@@ -803,7 +785,7 @@
                 showError('No email content to rewrite');
                 return;
             }
-            
+
             // Collect context
             const context = {
                 company: document.getElementById('companyName').value || undefined,
@@ -811,13 +793,13 @@
                 industry: document.getElementById('industry').value || undefined,
                 specific_detail: document.getElementById('specificDetail').value || undefined
             };
-            
+
             // Remove undefined values
             Object.keys(context).forEach(key => context[key] === undefined && delete context[key]);
-            
+
             try {
                 showLoadingState('Rewriting email with AI...');
-                
+
                 const response = await fetch(API_CONFIG.getURL('/complete-rewrite'), {
                     method: 'POST',
                     headers: {
@@ -829,11 +811,11 @@
                         context: context
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 hideLoadingState();
-                
+
                 if (data.status === 'success') {
                     currentRewriteResult = data.data;
                     showRewriteResults(data.data);
@@ -852,7 +834,7 @@
                 showError('Invalid rewrite data received');
                 return;
             }
-            
+
             // Get DOM elements
             const beforeScoreElement = document.getElementById('beforeScore');
             const afterScoreElement = document.getElementById('afterScore');
@@ -862,31 +844,31 @@
             const rewrittenSubjectElement = document.getElementById('rewrittenSubject');
             const rewrittenBodyElement = document.getElementById('rewrittenBody');
             const rewriteResultsSection = document.getElementById('rewriteResults');
-            
+
             // Get parent containers
             const originalEmailPreview = originalSubjectElement ? originalSubjectElement.closest('.email-preview') : null;
             const rewrittenEmailPreview = rewrittenSubjectElement ? rewrittenSubjectElement.closest('.email-preview') : null;
-            
-            if (!beforeScoreElement || !afterScoreElement || !improvementElement || 
-                !originalSubjectElement || !originalBodyElement || 
+
+            if (!beforeScoreElement || !afterScoreElement || !improvementElement ||
+                !originalSubjectElement || !originalBodyElement ||
                 !rewrittenSubjectElement || !rewrittenBodyElement || !rewriteResultsSection) {
                 showError('Page structure error - rewrite results elements missing');
                 return;
             }
-            
+
             // Show scores
             beforeScoreElement.textContent = rewriteData.improvement_score.before;
             afterScoreElement.textContent = rewriteData.improvement_score.after;
             improvementElement.textContent = '+' + rewriteData.improvement_score.improvement;
-            
+
             // Show original email safely
             originalSubjectElement.textContent = rewriteData.rewrite_result.original.subject;
             originalBodyElement.textContent = rewriteData.rewrite_result.original.body;
-            
+
             // Show rewritten email safely
             rewrittenSubjectElement.textContent = rewriteData.rewrite_result.rewritten.subject;
             rewrittenBodyElement.textContent = rewriteData.rewrite_result.rewritten.body;
-            
+
             // Force visibility for all elements
             originalSubjectElement.style.display = 'block';
             originalBodyElement.style.display = 'block';
@@ -904,7 +886,7 @@
             originalBodyElement.style.minHeight = '1em';
             rewrittenSubjectElement.style.minHeight = '1em';
             rewrittenBodyElement.style.minHeight = '1em';
-            
+
             // Also ensure the email-preview containers are visible
             if (originalEmailPreview) {
                 originalEmailPreview.style.display = 'block';
@@ -916,10 +898,10 @@
                 rewrittenEmailPreview.style.visibility = 'visible';
                 rewrittenEmailPreview.style.opacity = '1';
             }
-            
+
             // Show results section
             rewriteResultsSection.style.display = 'block';
-            
+
             showSuccess('Email rewritten successfully! Check the before/after comparison.');
         }
 
@@ -928,9 +910,9 @@
                 showError('No rewritten email to copy');
                 return;
             }
-            
+
             const emailText = `Subject: ${currentRewriteResult.rewrite_result.rewritten.subject}\n\n${currentRewriteResult.rewrite_result.rewritten.body}`;
-            
+
             navigator.clipboard.writeText(emailText).then(() => {
                 showSuccess('Rewritten email copied to clipboard!');
             }).catch(() => {
@@ -950,51 +932,51 @@
                 showError('No rewrite data available');
                 return;
             }
-            
+
             const improvementsList = document.getElementById('improvementsList');
             improvementsList.innerHTML = '';
-            
+
             // Show improvements summary
             const summary = document.createElement('div');
             summary.style.cssText = 'background: #f0f9ff; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;';
-            
+
             const summaryTitle = document.createElement('h3');
             summaryTitle.textContent = '📈 Improvement Summary';
             summary.appendChild(summaryTitle);
-            
+
             const summaryList = document.createElement('ul');
-            
+
             const wordCountItem = document.createElement('li');
             const wordReduction = currentRewriteResult.rewrite_result.improvements.word_reduction;
             const wordChange = wordReduction > 0 ? '-' : '+';
             wordCountItem.innerHTML = `<strong>Word Count:</strong> ${currentRewriteResult.rewrite_result.original.word_count} → ${currentRewriteResult.rewrite_result.rewritten.word_count} (${wordChange}${Math.abs(wordReduction)} words)`;
             summaryList.appendChild(wordCountItem);
-            
+
             const subjectLengthItem = document.createElement('li');
             subjectLengthItem.innerHTML = `<strong>Subject Length:</strong> ${currentRewriteResult.rewrite_result.original.subject_length} → ${currentRewriteResult.rewrite_result.rewritten.subject_length} characters`;
             summaryList.appendChild(subjectLengthItem);
-            
+
             const areasImprovedItem = document.createElement('li');
             areasImprovedItem.innerHTML = `<strong>Areas Improved:</strong> ${currentRewriteResult.rewrite_result.improvements.areas_improved}`;
             summaryList.appendChild(areasImprovedItem);
-            
+
             const scoreImprovementItem = document.createElement('li');
             scoreImprovementItem.innerHTML = `<strong>Score Improvement:</strong> +${currentRewriteResult.improvement_score.improvement} points`;
             summaryList.appendChild(scoreImprovementItem);
-            
+
             summary.appendChild(summaryList);
             improvementsList.appendChild(summary);
-            
+
             // Show specific improvements
             currentRewriteResult.rewrite_result.rewrite_suggestions.forEach(suggestion => {
                 const item = document.createElement('div');
                 item.className = 'suggestion-item low';
-                
+
                 const areaStrong = document.createElement('strong');
                 areaStrong.textContent = `${suggestion.area}:`;
                 item.appendChild(areaStrong);
                 item.appendChild(document.createElement('br'));
-                
+
                 const issueSpan = document.createElement('span');
                 issueSpan.style.color = '#dc2626';
                 issueSpan.textContent = 'Issue: ';
@@ -1002,7 +984,7 @@
                 item.appendChild(issueSpan);
                 item.appendChild(issueText);
                 item.appendChild(document.createElement('br'));
-                
+
                 const solutionSpan = document.createElement('span');
                 solutionSpan.style.color = '#059669';
                 solutionSpan.textContent = 'Solution: ';
@@ -1010,17 +992,17 @@
                 item.appendChild(solutionSpan);
                 item.appendChild(solutionText);
                 item.appendChild(document.createElement('br'));
-                
+
                 const exampleSpan = document.createElement('span');
                 exampleSpan.style.color = '#7c3aed';
                 exampleSpan.textContent = 'Example: ';
                 const exampleText = document.createTextNode(suggestion.example);
                 item.appendChild(exampleSpan);
                 item.appendChild(exampleText);
-                
+
                 improvementsList.appendChild(item);
             });
-            
+
             document.getElementById('rewriteDetails').style.display = 'block';
         }
 
@@ -1029,7 +1011,7 @@
             document.getElementById('rewriteResults').style.display = 'none';
             document.getElementById('rewriteDetails').style.display = 'none';
             document.getElementById('rewriterSection').style.display = 'block';
-            
+
             // Clear context fields for fresh start
             document.getElementById('companyName').value = '';
             document.getElementById('recipientName').value = '';
@@ -1059,7 +1041,7 @@
                 `;
                 document.body.appendChild(overlay);
             }
-            
+
             overlay.innerHTML = `
                 <div style="text-align: center;">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🤖</div>
@@ -1078,4 +1060,5 @@
         }
     </script>
 </body>
+
 </html>

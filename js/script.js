@@ -81,11 +81,124 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.innerHTML = '';
         const card = document.createElement('div');
         card.className = 'results-card';
-        card.innerHTML = `
+        
+        // Build enhanced HTML with new features
+        let html = `
             <div class="overall-score">
                 <h3>${data.overallScore}/100</h3>
             </div>
             <p class="verdict">${data.verdict}</p>
+        `;
+        
+        // Industry Benchmark Section (NEW)
+        if (data.benchmark) {
+            const performanceClass = data.benchmark.performance === 'above average' ? 'success' : 'warning';
+            html += `
+                <div class="benchmark-section" style="background: #F0F9FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0;">
+                    <h4 style="color: #1E40AF; margin-bottom: 1rem; font-size: 1rem;">📊 Industry Benchmark</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                        <div>
+                            <div style="font-size: 0.85rem; color: #64748B;">Industry</div>
+                            <div style="font-weight: 600; color: #1E293B; text-transform: capitalize;">${data.benchmark.industry}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #64748B;">Your Score</div>
+                            <div style="font-weight: 600; color: #1E293B;">${data.benchmark.your_score}/100</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #64748B;">Industry Avg</div>
+                            <div style="font-weight: 600; color: #1E293B;">${data.benchmark.industry_average}/100</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #64748B;">Performance</div>
+                            <div style="font-weight: 600; color: ${performanceClass === 'success' ? '#059669' : '#D97706'}; text-transform: capitalize;">${data.benchmark.performance}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #64748B;">Predicted Response</div>
+                            <div style="font-weight: 600; color: #1E293B;">${data.benchmark.predicted_response_rate}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Sentiment Analysis Section (NEW)
+        if (data.sentiment) {
+            const toneColor = data.sentiment.tone_score >= 70 ? '#059669' : data.sentiment.tone_score >= 50 ? '#D97706' : '#DC2626';
+            html += `
+                <div class="sentiment-section" style="background: #FEFCE8; border: 1px solid #FDE047; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0;">
+                    <h4 style="color: #854D0E; margin-bottom: 1rem; font-size: 1rem;">💬 Sentiment Analysis</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                        <div>
+                            <div style="font-size: 0.85rem; color: #64748B;">Dominant Tone</div>
+                            <div style="font-weight: 600; color: #1E293B; text-transform: capitalize;">${data.sentiment.dominant_sentiment}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #64748B;">Tone Score</div>
+                            <div style="font-weight: 600; color: ${toneColor};">${data.sentiment.tone_score}/100</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #64748B;">Authenticity</div>
+                            <div style="font-weight: 600; color: ${data.sentiment.is_authentic ? '#059669' : '#DC2626'};">${data.sentiment.is_authentic ? '✓ Authentic' : '✗ Generic'}</div>
+                        </div>
+                        ${data.sentiment.is_pushy ? `
+                        <div style="grid-column: 1 / -1;">
+                            <div style="background: #FEE2E2; border-left: 3px solid #DC2626; padding: 0.75rem; border-radius: 4px;">
+                                <strong style="color: #991B1B;">⚠️ Warning:</strong> Email tone appears pushy
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Template Detection Warning (NEW)
+        if (data.template_detection && data.template_detection.is_template) {
+            html += `
+                <div class="template-warning" style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 1rem; margin: 1.5rem 0;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.5rem;">⚠️</span>
+                        <div>
+                            <strong style="color: #991B1B;">Template Detected</strong>
+                            <p style="margin: 0.25rem 0 0 0; color: #64748B; font-size: 0.9rem;">Your email appears to use a generic template. Personalize it for better results.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Actionable Insights Section (NEW)
+        if (data.actionable_insights && data.actionable_insights.length > 0) {
+            html += `
+                <div class="insights-section" style="background: #F0FDF4; border: 1px solid #86EFAC; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0;">
+                    <h4 style="color: #166534; margin-bottom: 1rem; font-size: 1rem;">💡 Actionable Insights</h4>
+                    ${data.actionable_insights.map(insight => {
+                        const priorityColors = {
+                            high: { bg: '#FEE2E2', border: '#DC2626', text: '#991B1B' },
+                            medium: { bg: '#FEF3C7', border: '#F59E0B', text: '#92400E' },
+                            low: { bg: '#DBEAFE', border: '#3B82F6', text: '#1E40AF' }
+                        };
+                        const colors = priorityColors[insight.priority] || priorityColors.medium;
+                        
+                        return `
+                            <div style="background: ${colors.bg}; border-left: 3px solid ${colors.border}; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                    <strong style="color: ${colors.text};">${insight.category}</strong>
+                                    <span style="background: ${colors.border}; color: white; padding: 0.125rem 0.5rem; border-radius: 12px; font-size: 0.75rem; text-transform: uppercase;">${insight.priority}</span>
+                                </div>
+                                <p style="margin: 0.5rem 0; color: #1E293B; font-size: 0.9rem;"><strong>Issue:</strong> ${insight.issue}</p>
+                                <p style="margin: 0.5rem 0; color: #1E293B; font-size: 0.9rem;"><strong>Action:</strong> ${insight.action}</p>
+                                ${insight.example ? `<p style="margin: 0.5rem 0; color: #64748B; font-size: 0.85rem; font-style: italic;"><strong>Example:</strong> "${insight.example}"</p>` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+        
+        // Original Feedback Section
+        html += `
             <div class="feedback-section">
                 ${data.breakdown.map(category => `
                     <div class="category-score">
@@ -94,6 +207,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span>${category.score}/${category.maxScore}</span>
                         </div>
                         <p class="category-feedback">${category.feedback}</p>
+                        ${category.metrics ? `
+                            <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.85rem; color: #64748B;">
+                                ${Object.entries(category.metrics).map(([key, value]) => 
+                                    `<span>${key.replace(/_/g, ' ')}: ${value}</span>`
+                                ).join('')}
+                            </div>
+                        ` : ''}
                     </div>
                 `).join('')}
             </div>
@@ -112,6 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
+        card.innerHTML = html;
         resultsContainer.appendChild(card);
         
         // Show export section
@@ -128,9 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeAIFeatures();
     }
 
-    // === QUICK WINS FEATURE IMPLEMENTATIONS ===
-
-    // 1. Character Counter Implementation
     function initializeCharacterCounters() {
         const subjectInput = document.getElementById('subject');
         const bodyTextarea = document.getElementById('email-body');

@@ -24,8 +24,9 @@ from fastapi import status
 # Add the current directory to Python path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from local_analyzer import LocalEmailAnalyzer
+from enhanced_analyzer import EnhancedEmailAnalyzer
 from huggingface_analyzer import HuggingFaceAnalyzer
+from pdf_generator import PDFGenerator
 
 # Load environment variables from .env file
 load_dotenv()
@@ -147,6 +148,23 @@ app.add_middleware(
 app.mount("/css", StaticFiles(directory="css"), name="css")
 app.mount("/js", StaticFiles(directory="js"), name="js")
 
+# --- Frontend Routes ---
+@app.get("/")
+async def read_root():
+    return FileResponse("index.html")
+
+@app.get("/templates.html")
+async def read_templates():
+    return FileResponse("templates.html")
+
+@app.get("/batch-analysis.html")
+async def read_batch_analysis():
+    return FileResponse("batch-analysis.html")
+
+@app.get("/login.html")
+async def read_login():
+    return FileResponse("login.html")
+
 # Favicon endpoint
 @app.get("/favicon.ico")
 async def favicon():
@@ -257,7 +275,7 @@ async def analyze_with_ai(subject: str, body: str, request: Request) -> Analysis
     # Fallback to local analyzer
     print("INFO: Using local rule-based analyzer...")
     ai_model = "local"
-    local_analyzer = LocalEmailAnalyzer()
+    local_analyzer = EnhancedEmailAnalyzer()
     result_data = local_analyzer.analyze_email(subject, body)
     result_data["verdict"] += " (Local Analysis)"
     
@@ -947,51 +965,43 @@ async def generate_pdf_report(admin_user = Depends(get_current_admin), request: 
             unique_ips = 0
             avg_score = 0
         
-        # Create HTML report content
-        html_content = f"""
-        <html>
-        <head>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 40px; }}
-                .header {{ text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }}
-                .section {{ margin-bottom: 30px; }}
-                .metric {{ display: inline-block; margin: 20px; text-align: center; }}
-                .metric-value {{ font-size: 24px; font-weight: bold; color: #007bff; }}
-                .metric-label {{ font-size: 14px; color: #666; }}
-                table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-                th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
-                th {{ background-color: #f8f9fa; }}
-                .footer {{ margin-top: 40px; text-align: center; color: #666; font-size: 12px; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>📊 InboxQualify Analytics Report</h1>
-                <p>Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+        # Create HTML report content (simplified for PDF generator)
+        # We use the PDFGenerator's styling, so we just need the body content here
+        content_body = f"""
+            <div class="section">
+                <h2>Key Metrics (Last 30 Days)</h2>
+                <table style="border: none;">
+                    <tr>
+                        <td style="border: none;">
+                            <div class="metric-container">
+                                <div class="metric-value">{total_requests:,}</div>
+                                <div class="metric-label">Total Requests</div>
+                            </div>
+                        </td>
+                        <td style="border: none;">
+                            <div class="metric-container">
+                                <div class="metric-value">{success_rate:.1f}%</div>
+                                <div class="metric-label">Success Rate</div>
+                            </div>
+                        </td>
+                        <td style="border: none;">
+                            <div class="metric-container">
+                                <div class="metric-value">{unique_ips}</div>
+                                <div class="metric-label">Unique Users</div>
+                            </div>
+                        </td>
+                        <td style="border: none;">
+                            <div class="metric-container">
+                                <div class="metric-value">{avg_score:.1f}</div>
+                                <div class="metric-label">Avg Email Score</div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
             
             <div class="section">
-                <h2>📈 Key Metrics (Last 30 Days)</h2>
-                <div class="metric">
-                    <div class="metric-value">{total_requests:,}</div>
-                    <div class="metric-label">Total Requests</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-value">{success_rate:.1f}%</div>
-                    <div class="metric-label">Success Rate</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-value">{unique_ips}</div>
-                    <div class="metric-label">Unique Users</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-value">{avg_score:.1f}</div>
-                    <div class="metric-label">Avg Email Score</div>
-                </div>
-            </div>
-            
-            <div class="section">
-                <h2>🚨 Alert System Status</h2>
+                <h2>Alert System Status</h2>
                 <table>
                     <tr>
                         <th>Alert Type</th>
@@ -1000,24 +1010,24 @@ async def generate_pdf_report(admin_user = Depends(get_current_admin), request: 
                     </tr>
                     <tr>
                         <td>High Error Rate</td>
-                        <td>✅ Active</td>
+                        <td><span class="status-active">Active</span></td>
                         <td>> 10% (min 5 requests)</td>
                     </tr>
                     <tr>
                         <td>High Usage</td>
-                        <td>✅ Active</td>
+                        <td><span class="status-active">Active</span></td>
                         <td>> 3x average (min 10 requests)</td>
                     </tr>
                     <tr>
                         <td>API Failures</td>
-                        <td>✅ Active</td>
+                        <td><span class="status-active">Active</span></td>
                         <td>> 5 consecutive failures</td>
                     </tr>
                 </table>
             </div>
             
             <div class="section">
-                <h2>🔧 System Configuration</h2>
+                <h2>System Configuration</h2>
                 <table>
                     <tr>
                         <th>Component</th>
@@ -1026,30 +1036,32 @@ async def generate_pdf_report(admin_user = Depends(get_current_admin), request: 
                     </tr>
                     <tr>
                         <td>Database</td>
-                        <td>✅ {DB_TYPE.upper()}</td>
+                        <td><span class="status-active">{DB_TYPE.upper()}</span></td>
                         <td>Connected and operational</td>
                     </tr>
                     <tr>
                         <td>Email Alerts</td>
-                        <td>✅ Configured</td>
+                        <td><span class="status-active">Configured</span></td>
                         <td>SMTP settings active</td>
                     </tr>
                     <tr>
                         <td>AI Service</td>
-                        <td>✅ HuggingFace</td>
+                        <td><span class="status-active">HuggingFace</span></td>
                         <td>API integration working</td>
                     </tr>
                 </table>
             </div>
-            
-            <div class="footer">
-                <p>Report generated by InboxQualify Admin Dashboard</p>
-                <p>For support, contact your system administrator</p>
-            </div>
-        </body>
-        </html>
         """
         
+        # Generate full HTML with styles
+        full_html = PDFGenerator.get_styled_html(content_body, title="InboxQualify Analytics Report")
+        
+        # Generate PDF
+        pdf_buffer = PDFGenerator.generate_report_pdf(full_html)
+        
+        if not pdf_buffer:
+            raise HTTPException(status_code=500, detail="PDF generation failed")
+            
         # Log admin action if supported
         try:
             if hasattr(db, 'log_admin_action'):
@@ -1059,19 +1071,18 @@ async def generate_pdf_report(admin_user = Depends(get_current_admin), request: 
         except:
             pass
         
-        # For now, return the HTML content (in full implementation, this would be converted to PDF)
-        return {
-            "success": True,
-            "message": "PDF report generated successfully",
-            "html_content": html_content,
-            "note": "This is an HTML report. Full PDF generation with proper formatting will be implemented in the next phase."
-        }
+        # Return PDF as streaming response
+        filename = f"inboxqualify_report_{datetime.now().strftime('%Y%m%d')}.pdf"
+        
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
         
     except Exception as e:
-        return {
-            "success": False,
-            "message": f"Failed to generate PDF report: {str(e)}"
-        }
+        print(f"PDF Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF report: {str(e)}")
 
 @app.get("/admin/audit-log")
 async def get_audit_log(admin_user = Depends(get_current_admin), request: Request = None):
@@ -1183,8 +1194,11 @@ from enhanced_features import EmailTemplateGenerator, EmailSuggestionEngine, Ema
 template_generator = EmailTemplateGenerator()
 suggestion_engine = EmailSuggestionEngine()
 email_rewriter = EmailRewriter()
-batch_analyzer = BatchAnalyzer(suggestion_engine, email_rewriter)
-campaign_tracker = CampaignTracker()
+
+# Pass DB instance if available
+db_instance = db if DB_TYPE == "supabase" else None
+batch_analyzer = BatchAnalyzer(suggestion_engine, email_rewriter, db_instance)
+campaign_tracker = CampaignTracker(db_instance)
 
 class TemplateRequest(BaseModel):
     industry: str
@@ -1464,16 +1478,22 @@ async def analyze_batch_emails(request: BatchAnalysisRequest):
         if not emails:
             raise HTTPException(status_code=400, detail="No valid emails to analyze")
         
-        # Perform batch analysis
-        batch_result = batch_analyzer.analyze_batch(emails, request.include_rewrite)
-        
-        # Create campaign if specified
+        # Create campaign if specified (before analysis so we can link it)
+        campaign_id = None
         if request.campaign_name:
             campaign_id = campaign_tracker.create_campaign(
                 request.campaign_name, 
                 request.campaign_description or ""
             )
+        
+        # Perform batch analysis
+        batch_result = batch_analyzer.analyze_batch(emails, request.include_rewrite, campaign_id=campaign_id)
+        
+        # For non-DB fallback, we still need to link manually
+        if campaign_id and DB_TYPE != "supabase":
             campaign_tracker.add_batch_to_campaign(campaign_id, batch_result)
+            
+        if campaign_id:
             batch_result['campaign_id'] = campaign_id
         
         return {
@@ -1577,17 +1597,23 @@ async def get_campaign_stats(campaign_id: str):
 async def list_campaigns():
     """List all campaigns"""
     try:
-        campaigns = [
-            {
-                "id": campaign_id,
-                "name": campaign_data["name"],
-                "total_emails": campaign_data["total_emails"],
-                "average_score": campaign_data["average_score"],
-                "batch_count": len(campaign_data["batches"]),
-                "created_at": campaign_data["created_at"]
-            }
-            for campaign_id, campaign_data in campaign_tracker.campaigns.items()
-        ]
+        if DB_TYPE == "supabase":
+            campaigns = db.list_campaigns()
+            # Add computed fields if missing (DB returns raw rows)
+            # We might want to fetch stats for each, but for list view raw data is often enough
+            # or we can do a join in SQL. For now, let's just return what we have.
+        else:
+            campaigns = [
+                {
+                    "id": campaign_id,
+                    "name": campaign_data["name"],
+                    "total_emails": campaign_data["total_emails"],
+                    "average_score": campaign_data["average_score"],
+                    "batch_count": len(campaign_data["batches"]),
+                    "created_at": campaign_data["created_at"]
+                }
+                for campaign_id, campaign_data in campaign_tracker.campaigns.items()
+            ]
         
         return {
             "data": campaigns,

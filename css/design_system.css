@@ -1,0 +1,206 @@
+/* --- Premium Minimalist Design System --- */
+:root {
+    /* Core Palette - Solid, Bold, Harmonious */
+    --brand-primary: #0F172A; /* Deep Navy / Obsidian - Authority */
+    --brand-secondary: #334155; /* Slate - Professionalism */
+    --brand-accent: #2563EB; /* Royal Blue - Impact (used sparingly) */
+    
+    /* Neutrals - Crisp & Clean */
+    --bg-page: #F8FAFC; /* Off-white / Alabaster */
+    --bg-surface: #FFFFFF; /* Pure White */
+    --bg-subtle: #F1F5F9; /* Very Light Slate */
+    
+    /* Text Colors - High Contrast */
+    --text-primary: #0F172A; /* Almost Black */
+    --text-secondary: #64748B; /* Cool Grey */
+    --text-tertiary: #94A3B8; /* Lighter Grey */
+    --text-inverse: #FFFFFF; /* White text on dark backgrounds */
+    
+    /* Status Colors - Sophisticated Tones */
+    --status-success: #10B981; /* Emerald */
+    --status-warning: #F59E0B; /* Amber */
+    --status-error: #EF4444; /* Crimson */
+    --status-info: #3B82F6; /* Blue */
+    
+    /* Borders & Dividers */
+    --border-subtle: #E2E8F0;
+    --border-strong: #CBD5E1;
+    
+    /* Typography - Swiss Style */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Outfit', var(--font-sans); /* Optional: Use a distinct display font if available */
+    
+    /* Spacing System (8pt grid) */
+    --space-1: 0.25rem;   /* 4px */
+    --space-2: 0.5rem;    /* 8px */
+    --space-3: 0.75rem;   /* 12px */
+    --space-4: 1rem;      /* 16px */
+    --space-5: 1.25rem;   /* 20px */
+    --space-6: 1.5rem;    /* 24px */
+    --space-8: 2rem;      /* 32px */
+    --space-10: 2.5rem;   /* 40px */
+    --space-12: 3rem;     /* 48px */
+    --space-16: 4rem;     /* 64px */
+    --space-20: 5rem;     /* 80px */
+    --space-24: 6rem;     /* 96px */
+    
+    /* Typography Scale - Perfect Proportions (1.25 ratio) */
+    --font-size-xs: 0.75rem;      /* 12px */
+    --font-size-sm: 0.875rem;     /* 14px */
+    --font-size-base: 1rem;       /* 16px */
+    --font-size-lg: 1.125rem;     /* 18px */
+    --font-size-xl: 1.25rem;      /* 20px */
+    --font-size-2xl: 1.5rem;      /* 24px */
+    --font-size-3xl: 1.875rem;    /* 30px */
+    --font-size-4xl: 2.25rem;     /* 36px */
+    --font-size-5xl: 3rem;        /* 48px */
+    --font-size-6xl: 3.75rem;     /* 60px */
+    
+    /* Line Heights - Optimized for Readability */
+    --leading-none: 1;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+    --leading-loose: 2;
+    
+    /* Shadows - Subtle & Refined (No heavy drop shadows) */
+    --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 4px 6px -2px rgba(15, 23, 42, 0.025);
+    
+    /* Border Radius */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 9999px;
+}
+
+/* --- Global Reset & Typography --- */
+body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    color: var(--text-primary);
+    font-weight: 700;
+    letter-spacing: -0.02em; /* Tight tracking for headings */
+}
+
+/* --- Component Overrides --- */
+
+/* Buttons - Solid, Flat, Impactful */
+.btn, .cta-button {
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-6);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    text-transform: none; /* Avoid shouting */
+}
+
+.btn:hover, .cta-button:hover {
+    background: var(--brand-secondary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn.secondary {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+}
+
+.btn.secondary:hover {
+    background: var(--bg-subtle);
+    border-color: var(--brand-secondary);
+}
+
+/* Cards - Clean Surface, Subtle Border */
+.card, .section-card, .stat-card, .results-card, .app-container {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    /* Remove gradients */
+    background-image: none !important; 
+}
+
+/* Header - Minimalist */
+.header {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    box-shadow: none;
+}
+
+.logo {
+    color: var(--brand-primary);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    /* Remove gradient text */
+    background: none;
+    -webkit-text-fill-color: initial;
+}
+
+/* Inputs - Crisp Borders */
+input, textarea, select, .form-input {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    padding: var(--space-3);
+    transition: border-color 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus, .form-input:focus {
+    border-color: var(--brand-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1);
+}
+
+/* Badges - Subtle Backgrounds */
+.badge {
+    border-radius: var(--radius-full);
+    padding: 0.25em 0.75em;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge.success {
+    background: #DCFCE7; /* Light Emerald */
+    color: #14532D; /* Dark Emerald */
+}
+
+.badge.warning {
+    background: #FEF3C7; /* Light Amber */
+    color: #78350F; /* Dark Amber */
+}
+
+/* Navigation Tabs - Underline Style */
+.nav-tab {
+    color: var(--text-secondary);
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+}
+
+.nav-tab.active {
+    color: var(--brand-primary);
+    border-bottom-color: var(--brand-primary);
+    background: transparent;
+}
+
+.nav-tab:hover {
+    color: var(--brand-primary);
+    background: transparent;
+}

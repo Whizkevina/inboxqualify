@@ -468,10 +468,11 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 class BatchAnalyzer:
-    def __init__(self, suggestion_engine, email_rewriter):
+    def __init__(self, suggestion_engine, email_rewriter, db=None):
         self.suggestion_engine = suggestion_engine
         self.email_rewriter = email_rewriter
-        self.batch_results = {}  # Store batch results temporarily
+        self.db = db
+        self.batch_results = {}  # Fallback storage if DB is not available
         
     def parse_csv_content(self, csv_content: str) -> List[Dict[str, Any]]:
         """Parse CSV content and extract email data"""
@@ -541,8 +542,9 @@ class BatchAnalyzer:
         
         return mapping
     
-    def analyze_batch(self, emails: List[Dict[str, Any]], include_rewrite: bool = False) -> Dict[str, Any]:
+    def analyze_batch(self, emails: List[Dict[str, Any]], include_rewrite: bool = False, campaign_id: str = None, filename: str = None) -> Dict[str, Any]:
         """Analyze a batch of emails"""
+        # Generate ID initially, but DB might assign a new one
         batch_id = str(uuid.uuid4())
         results = []
         summary_stats = {
@@ -642,11 +644,27 @@ class BatchAnalyzer:
             'timestamp': start_time.isoformat(),
             'summary': summary_stats,
             'results': results,
-            'column_mapping_detected': True
+            'column_mapping_detected': True,
+            'campaign_id': campaign_id
         }
         
-        # Store temporarily (in production, save to database)
-        self.batch_results[batch_id] = batch_result
+        # Persist to Database if available
+        if self.db:
+            try:
+                # Create batch in DB
+                db_batch_id = self.db.create_batch(campaign_id, summary_stats, filename)
+                if db_batch_id:
+                    batch_result['batch_id'] = db_batch_id
+                    
+                    # Add items to DB
+                    self.db.add_batch_items(db_batch_id, results)
+            except Exception as e:
+                print(f"Error persisting batch to DB: {e}")
+                # Fallback to memory
+                self.batch_results[batch_id] = batch_result
+        else:
+            # Store temporarily (in memory)
+            self.batch_results[batch_id] = batch_result
         
         return batch_result
     
@@ -697,15 +715,27 @@ class BatchAnalyzer:
     
     def get_batch_result(self, batch_id: str):
         """Retrieve batch result by ID"""
+        if self.db:
+            db_result = self.db.get_batch(batch_id)
+            if db_result:
+                return db_result
+        
         return self.batch_results.get(batch_id)
 
 
 class CampaignTracker:
-    def __init__(self):
-        self.campaigns = {}
+    def __init__(self, db=None):
+        self.db = db
+        self.campaigns = {}  # Fallback storage
     
     def create_campaign(self, name: str, description: str = "") -> str:
         """Create a new email campaign"""
+        if self.db:
+            campaign_id = self.db.create_campaign(name, description)
+            if campaign_id:
+                return campaign_id
+                
+        # Fallback
         campaign_id = str(uuid.uuid4())
         self.campaigns[campaign_id] = {
             'id': campaign_id,
@@ -721,6 +751,13 @@ class CampaignTracker:
     
     def add_batch_to_campaign(self, campaign_id: str, batch_result: Dict[str, Any]):
         """Add a batch analysis to a campaign"""
+        # If using DB, the batch is already linked via campaign_id in create_batch
+        # We only need this for the fallback in-memory storage
+        
+        if self.db:
+            # DB handles this relationship via foreign keys
+            return
+
         if campaign_id in self.campaigns:
             campaign = self.campaigns[campaign_id]
             campaign['batches'].append({
@@ -742,6 +779,57 @@ class CampaignTracker:
     
     def get_campaign_stats(self, campaign_id: str):
         """Get comprehensive campaign statistics"""
+        if self.db:
+            campaign = self.db.get_campaign(campaign_id)
+            if campaign:
+                batches = self.db.get_campaign_batches(campaign_id)
+                
+                # Calculate stats on the fly from DB data
+                total_emails = 0
+                total_score_sum = 0
+                trend = []
+                
+                for batch in batches:
+                    summary = batch.get('summary', {})
+                    if isinstance(summary, str): summary = json.loads(summary)
+                    
+                    count = summary.get('processed_emails', 0)
+                    score = summary.get('average_score', 0)
+                    
+                    total_emails += count
+                    total_score_sum += (score * count)
+                    trend.append(score)
+                
+                # Reverse trend to be chronological (batches are desc)
+                trend.reverse()
+                
+                avg_score = round(total_score_sum / total_emails, 1) if total_emails > 0 else 0
+                
+                # Calculate trend direction
+                trend_status = "stable"
+                if len(trend) >= 2:
+                    recent_avg = sum(trend[-2:]) / 2
+                    older_avg = sum(trend[:-2]) / max(1, len(trend) - 2)
+                    
+                    if recent_avg > older_avg + 5:
+                        trend_status = "improving"
+                    elif recent_avg < older_avg - 5:
+                        trend_status = "declining"
+                
+                return {
+                    'id': campaign['id'],
+                    'name': campaign['name'],
+                    'description': campaign['description'],
+                    'created_at': campaign['created_at'],
+                    'total_emails': total_emails,
+                    'average_score': avg_score,
+                    'batch_count': len(batches),
+                    'trend': trend_status,
+                    'improvement_trend': trend,
+                    'batches': batches
+                }
+        
+        # Fallback
         if campaign_id not in self.campaigns:
             return {}
             

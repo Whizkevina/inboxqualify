@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InboxQualify - AI-Powered Cold Email Scoring</title>
-    <meta name="description" content="Analyze and score your cold emails with AI. Get instant feedback on personalization, value proposition, and professionalism to boost response rates.">
+    <meta name="description"
+        content="Analyze and score your cold emails with AI. Get instant feedback on personalization, value proposition, and professionalism to boost response rates.">
     <link rel="shortcut icon" href="favicon.svg" type="image/x-icon">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <script src="js/config.js"></script>
 </head>
+
 <body>
 
     <header class="header">
         <div class="container">
             <div class="logo">InboxQualify</div>
-            <div class="tagline">AI-Powered Email Analysis</div>
             <nav class="header-nav">
-                <a href="/templates.html" class="nav-link">📧 Email Templates</a>
-                <a href="/batch-analysis.html" class="nav-link">📊 Batch Analysis</a>
-                <!-- <a href="/admin" class="nav-link">🔧 Admin</a> -->
-                <!-- <a href="/login.html" class="cta-button" style="width: auto; padding: 0.5rem 1rem;">Login / Sign Up</a> -->
-                <button id="dark-mode-toggle" class="nav-link theme-toggle">🌙 Dark Mode</button>
+                <a href="/templates.html" class="nav-link">Templates</a>
+                <a href="/batch-analysis.html" class="nav-link">Batch Analysis</a>
             </nav>
         </div>
     </header>
@@ -32,7 +32,8 @@
         <div class="container">
             <div class="hero-content">
                 <h1>Score Your Cold Emails with AI</h1>
-                <p>Get instant, professional feedback on your outreach emails. Boost response rates with data-driven insights.</p>
+                <p>Get instant, professional feedback on your outreach emails. Boost response rates with data-driven
+                    insights.</p>
             </div>
         </div>
     </section>
@@ -43,32 +44,37 @@
                 <div class="two-column">
                     <section class="input-section">
                         <h2>Analyze Your Email</h2>
-                        
+
                         <!-- Quick Templates Section -->
                         <div class="quick-templates">
-                            <h3>📧 Quick Templates</h3>
+                            <h3>Quick Templates</h3>
                             <div class="template-buttons">
-                                <button type="button" class="template-btn" data-template="cold-outreach">Cold Outreach</button>
+                                <button type="button" class="template-btn" data-template="cold-outreach">Cold
+                                    Outreach</button>
                                 <button type="button" class="template-btn" data-template="follow-up">Follow Up</button>
-                                <button type="button" class="template-btn" data-template="introduction">Introduction</button>
-                                <button type="button" class="template-btn" data-template="partnership">Partnership</button>
+                                <button type="button" class="template-btn"
+                                    data-template="introduction">Introduction</button>
+                                <button type="button" class="template-btn"
+                                    data-template="partnership">Partnership</button>
                             </div>
                         </div>
-                        
+
                         <form id="email-form">
                             <div class="form-group">
                                 <label for="subject">Subject Line</label>
-                                <input type="text" id="subject" name="subject" placeholder="Enter your email subject line..." required>
+                                <input type="text" id="subject" name="subject"
+                                    placeholder="Enter your email subject line..." required>
                                 <div class="character-counter">
-                                    <span id="subject-counter">0</span> characters 
+                                    <span id="subject-counter">0</span> characters
                                     <span class="optimal-range">(optimal: 30-50)</span>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="email-body">Email Body</label>
-                                <textarea id="email-body" name="email-body" placeholder="Paste your email content here..." required></textarea>
+                                <textarea id="email-body" name="email-body"
+                                    placeholder="Paste your email content here..." required></textarea>
                                 <div class="character-counter">
-                                    <span id="body-counter">0</span> characters 
+                                    <span id="body-counter">0</span> characters
                                     <span class="optimal-range">(optimal: 50-200 words)</span>
                                 </div>
                             </div>
@@ -76,17 +82,17 @@
                                 <span class="button-text">Analyze Email</span>
                             </button>
                         </form>
-                        
+
                         <!-- Email Preview Section -->
                         <div class="email-preview" id="email-preview">
-                            <h3>📋 Email Preview</h3>
+                            <h3>Email Preview</h3>
                             <div class="preview-container">
                                 <div class="preview-subject">
                                     <strong>Subject:</strong> <span id="preview-subject-text"></span>
                                 </div>
                                 <div class="preview-body" id="preview-body-text"></div>
                             </div>
-                            <button type="button" id="toggle-preview" class="secondary-button">👁️ Toggle Preview</button>
+                            <button type="button" id="toggle-preview" class="secondary-button">Toggle Preview</button>
                         </div>
                     </section>
 
@@ -94,85 +100,19 @@
                         <div id="results-container">
                             <div class="placeholder">
                                 <h3>Your AI Analysis</h3>
-                                <p>Enter your email content and click "Analyze Email" to get detailed scoring and actionable feedback.</p>
+                                <p>Enter your email content and click "Analyze Email" to get detailed scoring and
+                                    actionable feedback.</p>
                             </div>
                         </div>
-                        
+
                         <!-- Export Section -->
                         <div class="export-section" id="export-section">
+                            <h3>Export Results</h3>
                             <div class="export-buttons">
-                                <button type="button" id="export-pdf" class="secondary-button">📄 Export as PDF</button>
-                                <button type="button" id="export-html" class="secondary-button">🌐 Export as HTML</button>
-                                <button type="button" id="copy-results" class="secondary-button">📋 Copy Results</button>
+                                <button type="button" id="export-pdf" class="secondary-button">Export PDF</button>
+                                <button type="button" id="export-html" class="secondary-button">Export HTML</button>
+                                <button type="button" id="copy-results" class="secondary-button">Copy Results</button>
                             </div>
-                        </div>
-                        
-                        <!-- AI Rewrite Section -->
-                        <div class="ai-rewrite-section" id="ai-rewrite-section" style="display: none;">
-                            <h3>🤖 AI Email Rewriter</h3>
-                            <p>Let AI rewrite your email to fix all issues and make it perfect:</p>
-                            
-                            <div class="rewrite-context">
-                                <h4>Additional Context (Optional):</h4>
-                                <div class="context-grid">
-                                    <input type="text" id="company-name" placeholder="Company name">
-                                    <input type="text" id="recipient-name" placeholder="Recipient name">
-                                    <input type="text" id="industry" placeholder="Industry">
-                                    <input type="text" id="specific-detail" placeholder="Research detail">
-                                </div>
-                            </div>
-                            
-                            <button type="button" id="perform-rewrite" class="cta-button">✨ Rewrite Email</button>
-                        </div>
-                        
-                        <!-- Rewrite Results Section -->
-                        <div class="rewrite-results" id="rewrite-results" style="display: none;">
-                            <h3>📊 Before vs After Comparison</h3>
-                            
-                            <div class="score-comparison">
-                                <div class="score-item">
-                                    <div class="score-number" id="before-score">0</div>
-                                    <div class="score-label">Before</div>
-                                </div>
-                                <div class="score-arrow">→</div>
-                                <div class="score-item">
-                                    <div class="score-number" id="after-score">0</div>
-                                    <div class="score-label">After</div>
-                                </div>
-                                <div class="score-improvement">
-                                    <div class="score-number" id="improvement">+0</div>
-                                    <div class="score-label">Improvement</div>
-                                </div>
-                            </div>
-                            
-                            <div class="email-comparison">
-                                <div class="email-column">
-                                    <h4>📧 Original Email</h4>
-                                    <div class="email-preview-box">
-                                        <div class="email-subject" id="original-subject"></div>
-                                        <div class="email-body" id="original-body"></div>
-                                    </div>
-                                </div>
-                                <div class="email-column">
-                                    <h4>✨ AI Rewritten Email</h4>
-                                    <div class="email-preview-box improved">
-                                        <div class="email-subject" id="rewritten-subject"></div>
-                                        <div class="email-body" id="rewritten-body"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="rewrite-actions">
-                                <button type="button" id="copy-rewritten" class="cta-button">📋 Copy Rewritten Email</button>
-                                <button type="button" id="show-details" class="secondary-button">🔍 Show Details</button>
-                                <button type="button" id="rewrite-again" class="secondary-button">🔄 Rewrite Again</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Rewrite Details Section -->
-                        <div class="rewrite-details" id="rewrite-details" style="display: none;">
-                            <h3>🔧 What Was Improved</h3>
-                            <div id="improvements-list"></div>
                         </div>
                     </section>
                 </div>
@@ -188,4 +128,5 @@
 
     <script src="js/script.js"></script>
 </body>
+
 </html>

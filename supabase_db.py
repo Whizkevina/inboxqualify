@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import json
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -562,6 +563,183 @@ class SupabaseDB:
         except Exception as e:
             print(f"ERROR: Could not create user '{email}': {e}")
             return None
+
+    # --- Campaign & Batch Methods ---
+    
+    def create_campaign(self, name: str, description: str = "") -> str:
+        """Create a new campaign"""
+        try:
+            data = {
+                "name": name,
+                "description": description
+            }
+            result = self.supabase.table('campaigns').insert(data).execute()
+            return result.data[0]['id'] if result.data else None
+        except Exception as e:
+            print(f"❌ Error creating campaign: {str(e)}")
+            return None
+
+    def get_campaign(self, campaign_id: str) -> Dict[str, Any]:
+        """Get campaign details"""
+        try:
+            result = self.supabase.table('campaigns').select('*').eq('id', campaign_id).execute()
+            return result.data[0] if result.data else None
+        except Exception as e:
+            print(f"❌ Error getting campaign: {str(e)}")
+            return None
+
+    def list_campaigns(self) -> List[Dict[str, Any]]:
+        """List all campaigns"""
+        try:
+            result = self.supabase.table('campaigns').select('*').order('created_at', desc=True).execute()
+            return result.data
+        except Exception as e:
+            print(f"❌ Error listing campaigns: {str(e)}")
+            return []
+
+    def create_batch(self, campaign_id: Optional[str], summary: Dict[str, Any], filename: str = None) -> str:
+        """Create a new batch record"""
+        try:
+            # Generate a UUID if not provided (though Supabase would do it, we might need it for items)
+            batch_id = str(uuid.uuid4())
+            
+            data = {
+                "id": batch_id,
+                "campaign_id": campaign_id,
+                "summary": json.dumps(summary) if isinstance(summary, dict) else summary,
+                "original_filename": filename
+            }
+            
+            result = self.supabase.table('batches').insert(data).execute()
+            return result.data[0]['id'] if result.data else batch_id
+        except Exception as e:
+            print(f"❌ Error creating batch: {str(e)}")
+            return None
+
+    def add_batch_items(self, batch_id: str, items: List[Dict[str, Any]]) -> bool:
+        """Add multiple items to a batch"""
+        try:
+            # Prepare items for insertion
+            db_items = []
+            for item in items:
+                db_items.append({
+                    "batch_id": batch_id,
+                    "email_data": json.dumps({
+                        "subject": item.get("subject"),
+                        "body": item.get("body"),
+                        "sender_name": item.get("sender_name"),
+                        "sender_email": item.get("sender_email"),
+                        "company": item.get("company"),
+                        "industry": item.get("industry")
+                    }),
+                    "analysis_result": json.dumps({
+                        "score": item.get("score"),
+                        "suggestions": item.get("suggestions"),
+                        "word_count": item.get("word_count"),
+                        "subject_length": item.get("subject_length"),
+                        "priority_issues": item.get("priority_issues"),
+                        "rewrite": item.get("rewrite")
+                    })
+                })
+            
+            # Insert in chunks to avoid payload limits
+            chunk_size = 100
+            for i in range(0, len(db_items), chunk_size):
+                chunk = db_items[i:i + chunk_size]
+                self.supabase.table('batch_items').insert(chunk).execute()
+                
+            return True
+        except Exception as e:
+            print(f"❌ Error adding batch items: {str(e)}")
+            return False
+
+    def get_batch(self, batch_id: str) -> Dict[str, Any]:
+        """Get batch details with items"""
+        try:
+            # Get batch info
+            batch_result = self.supabase.table('batches').select('*').eq('id', batch_id).execute()
+            if not batch_result.data:
+                return None
+            
+            batch = batch_result.data[0]
+            
+            # Get items
+            items_result = self.supabase.table('batch_items').select('*').eq('batch_id', batch_id).execute()
+            
+            # Reconstruct the format expected by the frontend
+            results = []
+            for item in items_result.data:
+                email_data = item.get('email_data', {}) or {}
+                analysis = item.get('analysis_result', {}) or {}
+                
+                # Handle string vs dict if Supabase returns JSON as dict automatically (it usually does)
+                if isinstance(email_data, str): email_data = json.loads(email_data)
+                if isinstance(analysis, str): analysis = json.loads(analysis)
+                
+                results.append({
+                    "id": item['id'],
+                    "subject": email_data.get('subject'),
+                    "body": email_data.get('body'),
+                    "sender_name": email_data.get('sender_name'),
+                    "sender_email": email_data.get('sender_email'),
+                    "company": email_data.get('company'),
+                    "industry": email_data.get('industry'),
+                    "score": analysis.get('score'),
+                    "suggestions": analysis.get('suggestions', []),
+                    "word_count": analysis.get('word_count'),
+                    "subject_length": analysis.get('subject_length'),
+                    "priority_issues": analysis.get('priority_issues', []),
+                    "suggestion_count": len(analysis.get('suggestions', [])),
+                    "rewrite": analysis.get('rewrite')
+                })
+            
+            return {
+                "batch_id": batch['id'],
+                "timestamp": batch['created_at'],
+                "summary": batch['summary'] if isinstance(batch['summary'], dict) else json.loads(batch['summary']),
+                "results": results,
+                "campaign_id": batch['campaign_id']
+            }
+        except Exception as e:
+            print(f"❌ Error getting batch: {str(e)}")
+            return None
+
+    def get_campaign_batches(self, campaign_id: str) -> List[Dict[str, Any]]:
+        """Get all batches for a campaign"""
+        try:
+            result = self.supabase.table('batches').select('*').eq('campaign_id', campaign_id).order('created_at', desc=True).execute()
+            return result.data
+        except Exception as e:
+            print(f"❌ Error getting campaign batches: {str(e)}")
+            return []
+
+    # --- System Settings Methods ---
+
+    def get_system_settings(self, key: str) -> Dict[str, Any]:
+        """Get system settings by key"""
+        try:
+            result = self.supabase.table('system_settings').select('value').eq('key', key).execute()
+            if result.data:
+                return result.data[0]['value']
+            return None
+        except Exception as e:
+            print(f"❌ Error getting system settings: {str(e)}")
+            return None
+
+    def update_system_settings(self, key: str, value: Dict[str, Any]) -> bool:
+        """Update system settings"""
+        try:
+            data = {
+                "key": key,
+                "value": json.dumps(value) if isinstance(value, dict) else value,
+                "updated_at": datetime.now().isoformat()
+            }
+            # Upsert
+            self.supabase.table('system_settings').upsert(data).execute()
+            return True
+        except Exception as e:
+            print(f"❌ Error updating system settings: {str(e)}")
+            return False
 
 # Global instance
 supabase_db = None
